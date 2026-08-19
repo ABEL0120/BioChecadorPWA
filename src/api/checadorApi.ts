@@ -8,49 +8,50 @@ import {
   GenerarDesafioResponse,
   EnrolarBiometriaRequest,
   MarcarAsistenciaRequest,
+  RegistroChecadaResponseDto,
 } from "../types/api";
 
 export const checadorApi = {
   verificarRfc: async (
     rfc: string,
+    dispositivo: string
   ): Promise<ApiResponse<VerificarRfcResponse>> => {
-    const payload: VerificarRfcRequest = { rfc };
+    const payload: VerificarRfcRequest = { rfc, dispositivo };
     const response = await apiClient.post<ApiResponse<VerificarRfcResponse>>(
       API_ENDPOINTS.CHECADOR.VERIFICAR_RFC,
-      payload,
+      payload
     );
     return response.data;
   },
 
   generarDesafio: async (
     rfc: string,
-    tipo: "ENROLAR" | "MARCAR",
+    tipo: "ENROLAR" | "MARCAR"
   ): Promise<ApiResponse<GenerarDesafioResponse>> => {
     const payload: GenerarDesafioRequest = { rfc, tipo };
     const response = await apiClient.post<ApiResponse<GenerarDesafioResponse>>(
       API_ENDPOINTS.CHECADOR.GENERAR_DESAFIO,
-      payload,
+      payload
     );
     return response.data;
   },
 
   enrolar: async (
-    payload: EnrolarBiometriaRequest,
+    payload: EnrolarBiometriaRequest
   ): Promise<ApiResponse<boolean>> => {
     const response = await apiClient.post<ApiResponse<boolean>>(
       API_ENDPOINTS.CHECADOR.ENROLAR,
-      payload,
+      payload
     );
     return response.data;
   },
 
   marcar: async (
-    payload: MarcarAsistenciaRequest,
-  ): Promise<ApiResponse<boolean>> => {
-    const response = await apiClient.post<ApiResponse<boolean>>(
-      API_ENDPOINTS.CHECADOR.MARCAR,
-      payload,
-    );
+    payload: MarcarAsistenciaRequest
+  ): Promise<ApiResponse<RegistroChecadaResponseDto>> => {
+    const response = await apiClient.post<
+      ApiResponse<RegistroChecadaResponseDto>
+    >(API_ENDPOINTS.CHECADOR.MARCAR, payload);
     return response.data;
   },
 };
