@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+:root {
+  --ion-background-color: #f8fafc;
+  --ion-background-color-rgb: 248, 250, 252;
+  --ion-text-color: #0f172a;
+  --ion-text-color-rgb: 15, 23, 42;
+  --ion-item-background: #ffffff;
+  --ion-card-background: #ffffff;
+  --ion-toolbar-background: #ffffff;
+  --ion-toolbar-color: #0f172a;
+}
+
+body,
+html {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+ion-content {
+  --background: #f8fafc !important;
+  --color: #0f172a !important;
+}
+
+ion-toolbar {
+  --background: #ffffff !important;
+  --color: #0f172a !important;
+  --border-color: #e2e8f0 !important;
+}
+
+ion-item {
+  --background: #ffffff !important;
+  --color: #0f172a !important;
+  --border-color: #e2e8f0 !important;
+}
+
+ion-card {
+  --background: #ffffff !important;
+  --color: #0f172a !important;
+  background: #ffffff !important;
+}

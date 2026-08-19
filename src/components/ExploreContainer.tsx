@@ -12,7 +12,7 @@ const ExploreContainer: React.FC<ContainerProps> = () => {
           rel="noopener noreferrer"
           href="https://ionicframework.com/docs/components"
         >
-          UI Components HOLAAA
+          UI Components
         </a>
       </p>
     </div>
