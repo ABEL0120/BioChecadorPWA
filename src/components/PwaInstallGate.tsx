@@ -99,9 +99,9 @@ export const PwaInstallGate: React.FC<PwaInstallGateProps> = ({ children }) => {
             <IonIcon icon={shieldCheckmarkOutline} className="text-4xl" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white">¡App Instalada!</h2>
+            <h2 className="text-2xl font-black text-white">¡Instalación Iniciada!</h2>
             <p className="text-slate-400 text-sm font-medium px-4">
-              La aplicación se instaló correctamente. Por seguridad, debes cerrar este navegador web y abrir la aplicación directamente desde tu pantalla de inicio.
+              La aplicación se está instalando. Por favor, cierra esta pestaña del navegador y abre la aplicación "BioChecador" directamente desde tu pantalla de inicio o cajón de aplicaciones.
             </p>
           </div>
         </div>

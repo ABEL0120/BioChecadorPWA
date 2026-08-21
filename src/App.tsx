@@ -1,8 +1,16 @@
 import { Redirect, Route } from "react-router-dom";
-import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
+import {
+  IonApp,
+  IonRouterOutlet,
+  setupIonicReact,
+  IonAlert,
+} from "@ionic/react";
+import { useRegisterSW } from "virtual:pwa-register/react";
 import { IonReactRouter } from "@ionic/react-router";
 import Home from "./pages/Home";
 import { PwaInstallGate } from "./components/PwaInstallGate";
+import { AuthSessionProvider } from "./context/AuthSessionContext";
+import { OfflineBanner } from "./components/OfflineBanner";
 
 import "@ionic/react/css/core.css";
 import "@ionic/react/css/normalize.css";
@@ -19,20 +27,68 @@ import "./theme/variables.css";
 
 setupIonicReact();
 
+function UpdatePrompt() {
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisteredSW(swUrl, r) {
+      if (r) {
+        const checkUpdate = () => {
+          if (!(!r.installing && navigator)) return;
+          if ("connection" in navigator && !navigator.onLine) return;
+          r.update();
+        };
+        setInterval(checkUpdate, 15000);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") {
+            checkUpdate();
+          }
+        });
+        window.addEventListener("focus", checkUpdate);
+      }
+    },
+    onRegisterError(error) {
+      console.error("SW registration error", error);
+    },
+  });
+
+  return (
+    <IonAlert
+      isOpen={needRefresh}
+      backdropDismiss={false}
+      header="Actualización Disponible"
+      message="Hay una nueva versión de la aplicación BioChecador. Es obligatorio actualizar para continuar trabajando."
+      buttons={[
+        {
+          text: "Actualizar Ahora",
+          handler: () => {
+            updateServiceWorker(true);
+          },
+        },
+      ]}
+    />
+  );
+}
+
 const App: React.FC = () => (
   <IonApp>
-    <PwaInstallGate>
-      <IonReactRouter>
-        <IonRouterOutlet>
-          <Route exact path="/home">
-            <Home />
-          </Route>
-          <Route exact path="/">
-            <Redirect to="/home" />
-          </Route>
-        </IonRouterOutlet>
-      </IonReactRouter>
-    </PwaInstallGate>
+    <UpdatePrompt />
+    <OfflineBanner />
+    <AuthSessionProvider>
+      <PwaInstallGate>
+        <IonReactRouter>
+          <IonRouterOutlet>
+            <Route exact path="/home">
+              <Home />
+            </Route>
+            <Route exact path="/">
+              <Redirect to="/home" />
+            </Route>
+          </IonRouterOutlet>
+        </IonReactRouter>
+      </PwaInstallGate>
+    </AuthSessionProvider>
   </IonApp>
 );
 
