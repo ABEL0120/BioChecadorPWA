@@ -9,6 +9,8 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
+import { IonIcon } from "@ionic/react";
+import { locateOutline } from "ionicons/icons";
 
 interface GeofenceMapProps {
   empresaLat: number;
@@ -40,6 +42,38 @@ const MapRecenter: React.FC<{ lat: number; lng: number }> = ({ lat, lng }) => {
     map.setView([lat, lng], map.getZoom());
   }, [lat, lng, map]);
   return null;
+};
+
+const MapResizer = () => {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+};
+
+const RecenterControl: React.FC<{ lat: number; lng: number }> = ({ lat, lng }) => {
+  const map = useMap();
+  return (
+    <div className="leaflet-bottom leaflet-right">
+      <div className="leaflet-control" style={{ margin: '10px' }}>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            map.setView([lat, lng], 16, { animate: true });
+          }}
+          className="bg-white text-blue-600 w-10 h-10 flex items-center justify-center rounded-xl shadow-md cursor-pointer hover:bg-slate-50 border border-slate-200"
+          title="Enfocar mi ubicación"
+        >
+          <IonIcon icon={locateOutline} style={{ fontSize: '20px' }} />
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export const GeofenceMap: React.FC<GeofenceMapProps> = ({
@@ -74,7 +108,9 @@ export const GeofenceMap: React.FC<GeofenceMapProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <MapResizer />
         <MapRecenter lat={centerLat} lng={centerLng} />
+        <RecenterControl lat={centerLat} lng={centerLng} />
 
         <Circle
           center={[empresaLat, empresaLng]}

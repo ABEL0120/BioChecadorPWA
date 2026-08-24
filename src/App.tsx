@@ -58,7 +58,7 @@ function UpdatePrompt() {
       isOpen={needRefresh}
       backdropDismiss={false}
       header="Actualización Disponible"
-      message="Hay una nueva versión de la aplicación BioChecador. Es obligatorio actualizar para continuar trabajando."
+      message="Hay una nueva versión de la aplicación Reloj Nomina. Es obligatorio actualizar para continuar trabajando."
       buttons={[
         {
           text: "Actualizar Ahora",

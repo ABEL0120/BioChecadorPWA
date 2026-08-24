@@ -1,2 +1,2 @@
-# BioChecadorPWA
+# Reloj Nomina 2026
 

@@ -1,6 +1,6 @@
 import { MarcarAsistenciaRequest } from "../types/api";
 
-const DB_NAME = "BioChecadorDB";
+const DB_NAME = "RelojNominaDB";
 const DB_VERSION = 1;
 const STORE_NAME = "pending_punches";
 

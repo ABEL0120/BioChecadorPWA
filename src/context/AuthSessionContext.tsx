@@ -22,7 +22,7 @@ const AuthSessionContext = createContext<AuthSessionContextType | undefined>(
   undefined,
 );
 
-const SESSION_KEY = "biochecador_session";
+const SESSION_KEY = "reloj_nomina_session";
 
 export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   children,

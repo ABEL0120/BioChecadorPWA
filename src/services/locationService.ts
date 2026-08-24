@@ -27,7 +27,7 @@ export const locationService = {
           switch (error.code) {
             case error.PERMISSION_DENIED:
               mensaje =
-                "Permiso de ubicación denegado. Habilita los permisos de GPS en tu navegador/celular.";
+                "Permiso de ubicación denegado. Para activarlo, toca el ícono del candado en la barra de direcciones, entra a 'Permisos', permite la Ubicación y recarga la página.";
               break;
             case error.POSITION_UNAVAILABLE:
               mensaje =
@@ -42,7 +42,7 @@ export const locationService = {
         {
           enableHighAccuracy: true,
           timeout: 15000,
-          maximumAge: 0,
+          maximumAge: 15000,
         }
       );
     });
@@ -68,7 +68,8 @@ export const locationService = {
         let mensaje = "No se pudo obtener la ubicación GPS.";
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            mensaje = "Permiso de ubicación denegado. Habilita los permisos de GPS.";
+            mensaje =
+              "Permiso de ubicación denegado. Para activarlo, toca el ícono del candado en la barra de direcciones, permite la Ubicación y recarga.";
             break;
           case error.POSITION_UNAVAILABLE:
             mensaje = "Información de ubicación no disponible. Verifica que tu GPS esté encendido.";
@@ -82,7 +83,7 @@ export const locationService = {
       {
         enableHighAccuracy: true,
         timeout: 15000,
-        maximumAge: 0,
+        maximumAge: 15000,
       }
     );
   },

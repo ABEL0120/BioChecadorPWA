@@ -74,7 +74,7 @@ export const biometricService = {
     const optionsJSON: any = {
       challenge: challengeBase64,
       rp: {
-        name: "BioChecador PWA",
+        name: "Reloj Nomina 2026",
         id: window.location.hostname,
       },
       user: {

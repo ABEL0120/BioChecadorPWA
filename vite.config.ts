@@ -21,8 +21,8 @@ export default defineConfig({
         "pwa-512x512.png",
       ],
       manifest: {
-        name: "BioChecador PWA",
-        short_name: "BioChecador",
+        name: "Reloj Nomina 2026",
+        short_name: "Reloj Nomina",
         description: "Sistema de Control de Asistencia Biométrica y GPS",
         theme_color: "#2563eb",
         background_color: "#f8fafc",

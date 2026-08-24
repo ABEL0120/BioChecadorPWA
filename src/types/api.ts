@@ -9,6 +9,18 @@ export interface VerificarRfcRequest {
   dispositivo: string;
 }
 
+export interface TurnoDetalleDto {
+  diaIndice: number;
+  diaNombre: string;
+  esLaborable: boolean;
+  entrada?: string;
+  salida?: string;
+  toleranciaEntradaMinutos?: number;
+  salidaComida?: string;
+  regresoComida?: string;
+  toleranciaComidaMinutos?: number;
+}
+
 export interface EstadoEmpleadoDto {
   existe: boolean;
   tieneBiometria: boolean;
@@ -21,6 +33,7 @@ export interface EstadoEmpleadoDto {
   longitudEmpresa?: number;
   radioToleranciaMetros?: number;
   ultimoMovimientoHoy?: string;
+  horario?: TurnoDetalleDto[];
 }
 
 export type VerificarRfcResponse = EstadoEmpleadoDto;
@@ -49,7 +62,7 @@ export interface MarcarAsistenciaRequest {
   latitud: number;
   longitud: number;
   dispositivo: string;
-  tipoMovimiento: "ENTRADA" | "SALIDA";
+  tipoMovimiento: "ENTRADA" | "SALIDA" | "RETARDO";
 }
 
 export interface RegistroChecadaResponseDto {

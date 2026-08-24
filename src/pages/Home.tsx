@@ -57,7 +57,9 @@ import {
 import { GeofenceMap } from "../components/GeofenceMap";
 import { useAuthSession } from "../context/AuthSessionContext";
 import { offlineSyncService } from "../services/offlineSyncService";
-
+import { useValidacionMarcaje } from "../hooks/useValidacionMarcaje";
+import { HorarioSemanal } from "../components/HorarioSemanal";
+import { formatError } from "../utils/errorHandler";
 export const Home: React.FC = () => {
   const [rfc, setRfc] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -95,10 +97,15 @@ export const Home: React.FC = () => {
       }
     };
   }, [resultado]);
-  
-  const [tipoMovimiento, setTipoMovimiento] = useState<"ENTRADA" | "SALIDA">(
-    "ENTRADA",
-  );
+
+  const {
+    isValido,
+    motivoBloqueo,
+    mensajeAdvertencia,
+    siguienteMovimiento,
+    distanciaMetros,
+  } = useValidacionMarcaje(resultado, userLocation);
+
   const [registroResult, setRegistroResult] =
     useState<RegistroChecadaResponseDto | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -112,6 +119,15 @@ export const Home: React.FC = () => {
     show: false,
     message: "",
     color: "danger",
+  });
+  const [alertState, setAlertState] = useState<{
+    show: boolean;
+    message: string;
+    title: string;
+  }>({
+    show: false,
+    message: "",
+    title: "",
   });
   const [hasPendingOffline, setHasPendingOffline] = useState<boolean>(false);
 
@@ -141,16 +157,6 @@ export const Home: React.FC = () => {
       window.removeEventListener("online", handleOnline);
     };
   }, [resultado]);
-
-  useEffect(() => {
-    if (resultado) {
-      if (resultado.ultimoMovimientoHoy === "ENTRADA") {
-        setTipoMovimiento("SALIDA");
-      } else {
-        setTipoMovimiento("ENTRADA");
-      }
-    }
-  }, [resultado?.ultimoMovimientoHoy]);
 
   useEffect(() => {
     biometricService.isPlatformAvailable().then((available) => {
@@ -184,16 +190,16 @@ export const Home: React.FC = () => {
     try {
       const loc = await locationService.obtenerUbicacionActual();
       setUserLocation(loc);
-      setToastState({
+      setAlertState({
         show: true,
         message: "Ubicación GPS actualizada en el mapa.",
-        color: "success",
+        title: "GPS Actualizado",
       });
     } catch (err: any) {
-      setToastState({
+      setAlertState({
         show: true,
-        message: err.message || "Error al obtener GPS.",
-        color: "warning",
+        message: formatError(err, "Error al obtener GPS."),
+        title: "Error GPS",
       });
     } finally {
       setFetchingGps(false);
@@ -205,10 +211,10 @@ export const Home: React.FC = () => {
     const cleanRfc = rfc.trim().toUpperCase();
 
     if (!cleanRfc) {
-      setToastState({
+      setAlertState({
         show: true,
         message: "Ingresa un RFC de 12 o 13 caracteres para consultar.",
-        color: "warning",
+        title: "Error",
       });
       return;
     }
@@ -222,11 +228,11 @@ export const Home: React.FC = () => {
       const response = await checadorApi.verificarRfc(cleanRfc, deviceName);
       if (response.success && response.data && response.data.existe) {
         login(response.data);
-        setToastState({
-          show: true,
-          message: response.message || "Empleado localizado.",
-          color: "success",
-        });
+        // setAlertState({
+        //   show: true,
+        //   message: response.message || "Empleado localizado.",
+        //   title: "Éxito",
+        // });
 
         locationService
           .obtenerUbicacionActual()
@@ -236,12 +242,7 @@ export const Home: React.FC = () => {
         setErrorMsg(response.message || "RFC no encontrado en el sistema.");
       }
     } catch (err: any) {
-      const apiData = err?.response?.data;
-      const msg =
-        apiData?.message ||
-        err?.message ||
-        "Error al conectar con la API de BioChecador.";
-      setErrorMsg(msg);
+      setErrorMsg(formatError(err, "Error al conectar con la API de Reloj Nomina."));
     } finally {
       setLoading(false);
     }
@@ -271,27 +272,24 @@ export const Home: React.FC = () => {
           ...resultado,
           tieneBiometria: true,
         });
-        setToastState({
+        setAlertState({
           show: true,
           message: "¡Biometría enrolada exitosamente en el sistema!",
-          color: "success",
+          title: "Éxito",
         });
       } else {
-        setToastState({
+        setAlertState({
           show: true,
           message: response.message || "No se pudo registrar la biometría.",
-          color: "danger",
+          title: "Error",
         });
       }
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Error durante la captura biométrica.";
-      setToastState({
+      const msg = formatError(err, "Error durante la captura biométrica.");
+      setAlertState({
         show: true,
         message: msg,
-        color: "danger",
+        title: "Error",
       });
     } finally {
       setEnrolling(false);
@@ -337,7 +335,7 @@ export const Home: React.FC = () => {
           latitud: location.latitud,
           longitud: location.longitud,
           dispositivo,
-          tipoMovimiento,
+          tipoMovimiento: siguienteMovimiento,
         });
 
         setRegistroResult({
@@ -350,10 +348,14 @@ export const Home: React.FC = () => {
           empresa: resultado.razonSocial || "Tu Empresa",
         });
         setHasPendingOffline(true);
-        setToastState({
+        login({
+          ...resultado,
+          ultimoMovimientoHoy: siguienteMovimiento,
+        });
+        setAlertState({
           show: true,
-          message: `Asistencia (${tipoMovimiento}) guardada localmente (Modo Offline).`,
-          color: "primary",
+          message: `Asistencia (${siguienteMovimiento}) guardada localmente (Modo Offline).`,
+          title: "Éxito",
         });
         setMarking(false);
         return;
@@ -365,60 +367,60 @@ export const Home: React.FC = () => {
         latitud: location.latitud,
         longitud: location.longitud,
         dispositivo,
-        tipoMovimiento,
+        tipoMovimiento: siguienteMovimiento,
       });
 
       if (response.data) {
         setRegistroResult(response.data);
-        setTipoMovimiento(tipoMovimiento === "ENTRADA" ? "SALIDA" : "ENTRADA");
-        setToastState({
+        login({
+          ...resultado,
+          ultimoMovimientoHoy: siguienteMovimiento,
+        });
+        setAlertState({
           show: true,
           message:
             response.message ||
-            `¡Asistencia (${tipoMovimiento}) registrada exitosamente!`,
-          color: response.data.dentroDeRango ? "success" : "warning",
+            `¡Asistencia (${siguienteMovimiento}) registrada exitosamente!`,
+          title: response.data.dentroDeRango ? "Éxito" : "Fuera de Rango",
         });
       } else {
-        setToastState({
+        setAlertState({
           show: true,
           message:
             response.message ||
             "No se pudo registrar el marcaje de asistencia.",
-          color: "danger",
+          title: "Error",
         });
       }
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Error al registrar marcaje de asistencia.";
+      const msg = formatError(err, "Error al registrar la asistencia.");
 
       if (
         msg.includes("NotAllowedError") ||
         msg.includes("timed out or was not allowed") ||
         msg.includes("cancel")
       ) {
-        setToastState({
+        setAlertState({
           show: true,
           message: "Autenticación biométrica cancelada. Intenta nuevamente.",
-          color: "warning",
+          title: "Error",
         });
       } else if (
         msg.includes("No credential") ||
         msg.includes("authenticator")
       ) {
         login({ ...resultado, tieneBiometria: false });
-        setToastState({
+        setAlertState({
           show: true,
           message:
             "Credencial biométrica no encontrada. Vuelve a registrar tu huella/rostro.",
-          color: "warning",
+          title: "Error",
         });
       } else {
-        setToastState({
+        setAlertState({
           show: true,
           message: msg,
-          color: "danger",
+          title: "Error",
         });
       }
     } finally {
@@ -444,7 +446,7 @@ export const Home: React.FC = () => {
             </div>
           </IonButtons>
           <IonTitle className="font-black tracking-tight text-slate-900">
-            BioChecador
+            Reloj Nomina
           </IonTitle>
           {resultado && (
             <IonButtons slot="end" className="pr-2">
@@ -526,59 +528,65 @@ export const Home: React.FC = () => {
               </div>
 
               <IonCard className="m-0 rounded-3xl border border-slate-200 shadow-md bg-white overflow-hidden">
-                <IonCardHeader className="bg-slate-50/80 border-b border-slate-200 p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <IonCardTitle className="text-lg font-black text-slate-900">
-                        Búsqueda y Verificación
-                      </IonCardTitle>
-                      <IonCardSubtitle className="text-xs text-slate-500 font-medium mt-0.5">
-                        Introduce el RFC del colaborador para consultar datos de
-                        sucursal
-                      </IonCardSubtitle>
+                {!resultado && (
+                  <IonCardHeader className="bg-slate-50/80 border-b border-slate-200 p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <IonCardTitle className="text-lg font-black text-slate-900">
+                          Búsqueda y Verificación
+                        </IonCardTitle>
+                        <IonCardSubtitle className="text-xs text-slate-500 font-medium mt-0.5">
+                          Introduce el RFC del empleado para consultar datos de
+                          sucursal
+                        </IonCardSubtitle>
+                      </div>
                     </div>
-                  </div>
-                </IonCardHeader>
+                  </IonCardHeader>
+                )}
 
-                <IonCardContent className="p-5 bg-white">
-                  <form onSubmit={handleVerificarRfc} className="space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-3 items-stretch pt-3">
-                      <IonItem className="rounded-2xl border border-slate-300 flex-1 bg-white ion-no-padding px-3 shadow-inner">
-                        <IonIcon
-                          icon={personOutline}
-                          slot="start"
-                          className="text-slate-400 text-xl mr-2 pl-3"
-                        />
-                        <IonInput
-                          value={rfc}
-                          onIonInput={(e) => setRfc(e.detail.value!)}
-                          placeholder="RFC DEL COLABORADOR"
-                          maxlength={13}
-                          className="font-mono uppercase font-black text-slate-900"
-                        />
-                      </IonItem>
+                <IonCardContent
+                  className={resultado ? "p-0 bg-white" : "p-5 bg-white"}
+                >
+                  {!resultado && (
+                    <form onSubmit={handleVerificarRfc} className="space-y-4">
+                      <div className="flex flex-col sm:flex-row gap-3 items-stretch pt-3">
+                        <IonItem className="rounded-2xl border border-slate-300 flex-1 bg-white ion-no-padding px-3 shadow-inner">
+                          <IonIcon
+                            icon={personOutline}
+                            slot="start"
+                            className="text-slate-400 text-xl mr-2 pl-3"
+                          />
+                          <IonInput
+                            value={rfc}
+                            onIonInput={(e) => setRfc(e.detail.value!)}
+                            placeholder="RFC DEL EMPLEADO"
+                            maxlength={13}
+                            className="font-mono uppercase font-black text-slate-900"
+                          />
+                        </IonItem>
 
-                      <IonButton
-                        type="submit"
-                        disabled={loading || enrolling || marking}
-                        className="h-14 font-extrabold text-base shadow-lg shadow-blue-500/25 rounded-2xl"
-                        color="primary"
-                      >
-                        {loading ? (
-                          <IonSpinner name="crescent" />
-                        ) : (
-                          <>
-                            <IonIcon
-                              slot="start"
-                              icon={searchOutline}
-                              className="pr-2"
-                            />
-                            Verificar RFC
-                          </>
-                        )}
-                      </IonButton>
-                    </div>
-                  </form>
+                        <IonButton
+                          type="submit"
+                          disabled={loading || enrolling || marking}
+                          className="h-14 font-extrabold text-base shadow-lg shadow-blue-500/25 rounded-2xl"
+                          color="primary"
+                        >
+                          {loading ? (
+                            <IonSpinner name="crescent" />
+                          ) : (
+                            <>
+                              <IonIcon
+                                slot="start"
+                                icon={searchOutline}
+                                className="pr-2"
+                              />
+                              Verificar RFC
+                            </>
+                          )}
+                        </IonButton>
+                      </div>
+                    </form>
+                  )}
 
                   <IonAlert
                     isOpen={!!errorMsg && !resultado}
@@ -589,8 +597,8 @@ export const Home: React.FC = () => {
                   />
 
                   {resultado && (
-                    <div className="mt-6 border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50 shadow-sm space-y-4">
-                      <div className=" p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="border-t-0 border border-slate-200 overflow-hidden bg-slate-50/50 space-y-4">
+                      <div className="p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center space-x-3">
                           <IonAvatar className="w-12 h-12 border-2 border-white/20 shadow-md">
                             <div className="w-full h-full bg-blue-600 flex items-center justify-center font-black text-lg text-white">
@@ -602,7 +610,7 @@ export const Home: React.FC = () => {
 
                           <div>
                             <h3 className="font-black text-base text-black leading-tight">
-                              {resultado.nombre || "Colaborador Registrado"}
+                              {resultado.nombre || "Empleado Registrado"}
                             </h3>
                             <div className="font-mono text-xs text-black font-bold mt-0.5">
                               RFC: {resultado.rfc}
@@ -674,8 +682,8 @@ export const Home: React.FC = () => {
                         />
                       </div>
 
-                      <div className="px-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
+                      <div className="px-5">
+                        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2 w-full">
                           <div className="flex items-center text-xs font-black uppercase text-slate-400 tracking-wider">
                             <IonIcon
                               icon={businessOutline}
@@ -687,33 +695,14 @@ export const Home: React.FC = () => {
                             {resultado.razonSocial ||
                               `Compañía #${resultado.numeroCompania}`}
                           </div>
-                          {/* <div className="text-xs text-slate-500 font-mono font-bold">
-                        ID Compañía: {resultado.numeroCompania}
-                      </div> */}
                         </div>
-
-                        {/* <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
-                      <div className="flex items-center text-xs font-black uppercase text-slate-400 tracking-wider">
-                        <IonIcon
-                          icon={locationOutline}
-                          className="mr-1.5 text-emerald-600 text-base"
-                        />
-                        Coordenadas y Perímetro
-                      </div>
-                      <div className="text-xs font-mono text-slate-900 font-black">
-                        Lat: {resultado.latitudEmpresa ?? 0.0} | Lng:{" "}
-                        {resultado.longitudEmpresa ?? 0.0}
-                      </div>
-                      <div className="text-xs text-slate-600 font-medium">
-                        Tolerancia Haversine:{" "}
-                        <span className="font-black text-slate-900">
-                          {resultado.radioToleranciaMetros ?? 150}m
-                        </span>
-                      </div>
-                    </div> */}
                       </div>
 
-                      <div className="px-5 pb-5 space-y-4">
+                      <div className="px-5">
+                        <HorarioSemanal horario={resultado.horario || []} />
+                      </div>
+
+                      <div className="px-5 pb-5 space-y-4 pt-2">
                         {resultado.tieneBiometria ? (
                           <div className="space-y-4 bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -728,20 +717,59 @@ export const Home: React.FC = () => {
                               <div className="px-4 py-2 bg-slate-100 rounded-xl flex items-center justify-center font-black text-sm text-slate-700 tracking-widest uppercase">
                                 <IonIcon
                                   icon={
-                                    tipoMovimiento === "ENTRADA"
+                                    siguienteMovimiento === "ENTRADA"
                                       ? logInOutline
                                       : logOutOutline
                                   }
                                   className="mr-2 text-lg text-blue-600"
                                 />
-                                {tipoMovimiento}
+                                {siguienteMovimiento?.replace("_", " ") ||
+                                  "ENTRADA"}
                               </div>
                             </div>
 
+                            {!isValido && motivoBloqueo && (
+                              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-2">
+                                <IonIcon
+                                  icon={alertCircleOutline}
+                                  className="text-red-500 text-xl mt-0.5"
+                                />
+                                <div className="text-sm font-bold text-red-800">
+                                  Bloqueado:{" "}
+                                  <span className="font-medium text-red-600">
+                                    {motivoBloqueo}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {isValido && mensajeAdvertencia && (
+                              <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start space-x-2">
+                                <IonIcon
+                                  icon={alertCircleOutline}
+                                  className="text-amber-500 text-xl mt-0.5"
+                                />
+                                <div className="text-sm font-bold text-amber-800">
+                                  Advertencia:{" "}
+                                  <span className="font-medium text-amber-600">
+                                    {mensajeAdvertencia}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
                             <IonButton
                               expand="block"
-                              color={hasPendingOffline ? "medium" : "success"}
-                              disabled={marking || hasPendingOffline}
+                              color={
+                                hasPendingOffline
+                                  ? "medium"
+                                  : isValido
+                                    ? "success"
+                                    : "light"
+                              }
+                              disabled={
+                                marking || hasPendingOffline || !isValido
+                              }
                               onClick={handleMarcarAsistencia}
                               className="font-black text-base shadow-lg shadow-emerald-500/25 h-14 rounded-2xl"
                             >
@@ -763,7 +791,9 @@ export const Home: React.FC = () => {
                                     icon={fingerPrintOutline}
                                     className="text-xl pr-2"
                                   />
-                                  Marcar {tipoMovimiento}
+                                  Marcar{" "}
+                                  {siguienteMovimiento?.replace("_", " ") ||
+                                    "ENTRADA"}
                                   <IonIcon
                                     slot="end"
                                     icon={arrowForwardOutline}
@@ -799,18 +829,18 @@ export const Home: React.FC = () => {
                         )}
 
                         {registroResult && (
-                          <div className="p-5 rounded-2xl text-black shadow-xl space-y-3">
-                            <div className="flex items-center justify-between border-b border-slate-700 pb-3">
-                              <div className="flex items-center space-x-2">
+                          <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/50 border border-blue-100 shadow-sm space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-3">
+                              <div className="flex items-start sm:items-center space-x-3">
                                 <IonIcon
                                   icon={navigateOutline}
-                                  className="text-2xl text-blue-400"
+                                  className="text-2xl text-blue-500 mt-1 sm:mt-0"
                                 />
-                                <div>
-                                  <div className="text-xs uppercase font-bold text-black">
+                                <div className="flex-1">
+                                  <div className="text-[10px] sm:text-xs uppercase font-extrabold text-slate-500 tracking-wider">
                                     Marcaje Registrado
                                   </div>
-                                  <div className="text-base font-black text-black">
+                                  <div className="text-sm sm:text-base font-black text-slate-900 leading-tight mt-0.5">
                                     {registroResult.nombre || resultado.nombre}
                                   </div>
                                 </div>
@@ -822,7 +852,7 @@ export const Home: React.FC = () => {
                                     ? "success"
                                     : "danger"
                                 }
-                                className="px-3 py-1.5 text-xs font-black rounded-lg"
+                                className="px-3 py-1.5 text-[10px] sm:text-xs font-black rounded-lg self-start sm:self-auto"
                               >
                                 {registroResult.dentroDeRango
                                   ? "Dentro de Sucursal"
@@ -830,9 +860,9 @@ export const Home: React.FC = () => {
                               </IonBadge>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                               <div>
-                                <span className="text-black font-bold block">
+                                <span className="text-slate-500 font-bold block mb-0.5">
                                   Distancia Calculada:
                                 </span>
                                 <span className="text-sm font-mono font-black text-blue-600">
@@ -842,17 +872,17 @@ export const Home: React.FC = () => {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-black font-bold block">
+                                <span className="text-slate-500 font-bold block mb-0.5">
                                   Empresa / Sucursal:
                                 </span>
-                                <span className="text-sm font-bold text-black">
+                                <span className="text-sm font-bold text-slate-900 leading-tight block">
                                   {registroResult.empresa ||
                                     resultado.razonSocial}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="text-xs text-black font-medium pt-2 border-t border-slate-800">
+                            <div className="text-[11px] sm:text-xs text-slate-600 font-medium pt-3 border-t border-slate-200">
                               {registroResult.mensaje}
                             </div>
                           </div>
@@ -865,6 +895,14 @@ export const Home: React.FC = () => {
             </>
           )}
         </div>
+
+        <IonAlert
+          header={alertState.title}
+          isOpen={alertState.show}
+          onDidDismiss={() => setAlertState({ ...alertState, show: false })}
+          message={alertState.message}
+          buttons={["Aceptar"]}
+        />
 
         <IonToast
           isOpen={toastState.show}
