@@ -14,16 +14,14 @@ import {
 export const checadorApi = {
   verificarRfc: async (
     rfc: string,
-    dispositivo: string
+    dispositivo: string,
   ): Promise<ApiResponse<VerificarRfcResponse>> => {
     const payload = { rfc, dispositivo, dispositivoNombre: dispositivo };
     const response = await apiClient.post<ApiResponse<any>>(
       API_ENDPOINTS.CHECADOR.VERIFICAR_RFC,
-      payload
+      payload,
     );
-    
 
-  
     if (response.data && response.data.data) {
       const raw = response.data.data;
       response.data.data = {
@@ -37,51 +35,55 @@ export const checadorApi = {
         razonSocial: raw.razonSocial ?? raw.RazonSocial,
         latitudEmpresa: raw.latitudEmpresa ?? raw.LatitudEmpresa,
         longitudEmpresa: raw.longitudEmpresa ?? raw.LongitudEmpresa,
-        radioToleranciaMetros: raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
+        radioToleranciaMetros:
+          raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
         ultimoMovimientoHoy: raw.ultimoMovimientoHoy ?? raw.UltimoMovimientoHoy,
         horario: raw.horario ?? raw.Horario,
       };
 
       if (Array.isArray(response.data.data.horario)) {
-        response.data.data.horario = response.data.data.horario.map((h: any) => ({
-          ...h,
-          diaIndice: h.diaIndice ?? h.DiaIndice,
-          diaNombre: h.diaNombre ?? h.DiaNombre,
-          esLaborable: h.esLaborable ?? h.EsLaborable,
-          entrada: h.entrada ?? h.Entrada,
-          salida: h.salida ?? h.Salida,
-          toleranciaEntradaMinutos: h.toleranciaEntradaMinutos ?? h.ToleranciaEntradaMinutos,
-        }));
+        response.data.data.horario = response.data.data.horario.map(
+          (h: any) => ({
+            ...h,
+            diaIndice: h.diaIndice ?? h.DiaIndice,
+            diaNombre: h.diaNombre ?? h.DiaNombre,
+            esLaborable: h.esLaborable ?? h.EsLaborable,
+            entrada: h.entrada ?? h.Entrada,
+            salida: h.salida ?? h.Salida,
+            toleranciaEntradaMinutos:
+              h.toleranciaEntradaMinutos ?? h.ToleranciaEntradaMinutos,
+          }),
+        );
       }
     }
-    
+
     return response.data as ApiResponse<VerificarRfcResponse>;
   },
 
   generarDesafio: async (
     rfc: string,
-    tipo: "ENROLAR" | "MARCAR"
+    tipo: "ENROLAR" | "MARCAR",
   ): Promise<ApiResponse<GenerarDesafioResponse>> => {
     const payload: GenerarDesafioRequest = { rfc, tipo };
     const response = await apiClient.post<ApiResponse<GenerarDesafioResponse>>(
       API_ENDPOINTS.CHECADOR.GENERAR_DESAFIO,
-      payload
+      payload,
     );
     return response.data;
   },
 
   enrolar: async (
-    payload: EnrolarBiometriaRequest
+    payload: EnrolarBiometriaRequest,
   ): Promise<ApiResponse<boolean>> => {
     const response = await apiClient.post<ApiResponse<boolean>>(
       API_ENDPOINTS.CHECADOR.ENROLAR,
-      payload
+      payload,
     );
     return response.data;
   },
 
   marcar: async (
-    payload: MarcarAsistenciaRequest
+    payload: MarcarAsistenciaRequest,
   ): Promise<ApiResponse<RegistroChecadaResponseDto>> => {
     const response = await apiClient.post<
       ApiResponse<RegistroChecadaResponseDto>

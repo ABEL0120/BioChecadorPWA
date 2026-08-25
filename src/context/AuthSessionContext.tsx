@@ -80,7 +80,7 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
             }
           } catch (err: any) {
             console.error("Error syncing punch:", err);
-            // Only delete if it's a 4xx error (validation failed, won't ever succeed)
+
             if (
               err.response &&
               err.response.status >= 400 &&
@@ -91,7 +91,6 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
           }
         }
 
-        // Refresh session to update Home.tsx state
         if (syncedAny) {
           refresh();
         }
