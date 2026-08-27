@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
     GENERAR_DESAFIO: "/checador/generar-desafio",
     ENROLAR: "/checador/enrolar",
     MARCAR: "/checador/marcar",
+    HISTORICO: "/checador/historico",
   },
   AUTH: {
     LOGIN: "/auth/login",

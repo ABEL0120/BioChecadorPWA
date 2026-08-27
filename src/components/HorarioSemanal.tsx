@@ -1,10 +1,10 @@
 import React from "react";
 import { IonIcon } from "@ionic/react";
 import { timeOutline, cafeOutline, calendarOutline } from "ionicons/icons";
-import { TurnoDetalleDto } from "../types/api";
+import { HorarioDto, TurnoDetalleDto } from "../types/api";
 
 interface HorarioSemanalProps {
-  horario: TurnoDetalleDto[];
+  horario: TurnoDetalleDto[] | HorarioDto;
 }
 
 export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({ horario }) => {
@@ -13,11 +13,16 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({ horario }) => {
   if (Array.isArray(horario)) {
     horarioArray = horario;
   } else if (horario && typeof horario === "object") {
-    const possibleArray = Object.values(horario).find(val => Array.isArray(val));
-    if (possibleArray) {
-      horarioArray = possibleArray as any[];
+    const h = horario as any;
+    if (h.dias && Array.isArray(h.dias)) {
+      horarioArray = h.dias;
     } else {
-      horarioArray = [horario];
+      const possibleArray = Object.values(horario).find(val => Array.isArray(val));
+      if (possibleArray) {
+        horarioArray = possibleArray as any[];
+      } else {
+        horarioArray = [horario];
+      }
     }
   }
 
@@ -40,21 +45,10 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({ horario }) => {
       .toLowerCase()
       .trim();
 
-  const diasOrden = [
-    "sabado",
-    "domingo",
-    "lunes",
-    "martes",
-    "miercoles",
-    "jueves",
-    "viernes",
-  ];
-
-  // Ordenar de Sábado a Viernes
   horarioArray.sort((a, b) => {
-    const idxA = diasOrden.indexOf(normalizeStr(a.diaNombre));
-    const idxB = diasOrden.indexOf(normalizeStr(b.diaNombre));
-    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+    const idxA = a.diaIndice !== undefined ? a.diaIndice : 99;
+    const idxB = b.diaIndice !== undefined ? b.diaIndice : 99;
+    return idxA - idxB;
   });
 
   const diasSemanaJS = [

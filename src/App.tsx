@@ -11,6 +11,10 @@ import Home from "./pages/Home";
 import { PwaInstallGate } from "./components/PwaInstallGate";
 import { AuthSessionProvider } from "./context/AuthSessionContext";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { MenuLateral } from "./components/MenuLateral";
+import HorarioPage from "./pages/HorarioPage";
+import HistorialPage from "./pages/HistorialPage";
+import { IonSplitPane } from "@ionic/react";
 
 import "@ionic/react/css/core.css";
 import "@ionic/react/css/normalize.css";
@@ -62,8 +66,11 @@ function UpdatePrompt() {
       buttons={[
         {
           text: "Actualizar Ahora",
-          handler: () => {
-            updateServiceWorker(true);
+          handler: async () => {
+            await updateServiceWorker(true);
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
           },
         },
       ]}
@@ -78,14 +85,23 @@ const App: React.FC = () => (
     <AuthSessionProvider>
       <PwaInstallGate>
         <IonReactRouter>
-          <IonRouterOutlet>
-            <Route exact path="/home">
-              <Home />
-            </Route>
-            <Route exact path="/">
-              <Redirect to="/home" />
-            </Route>
-          </IonRouterOutlet>
+          <IonSplitPane contentId="main-content">
+            <MenuLateral />
+            <IonRouterOutlet id="main-content">
+              <Route exact path="/home">
+                <Home />
+              </Route>
+              <Route exact path="/horario">
+                <HorarioPage />
+              </Route>
+              <Route exact path="/historial">
+                <HistorialPage />
+              </Route>
+              <Route exact path="/">
+                <Redirect to="/home" />
+              </Route>
+            </IonRouterOutlet>
+          </IonSplitPane>
         </IonReactRouter>
       </PwaInstallGate>
     </AuthSessionProvider>

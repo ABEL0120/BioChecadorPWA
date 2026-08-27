@@ -4,9 +4,17 @@ export const formatError = (error: any, defaultMessage: string = "Ha ocurrido un
   if (!error) return defaultMessage;
 
   if (error.isAxiosError) {
-    const axiosError = error as AxiosError;
+    const axiosError = error as AxiosError<any>;
     if (!axiosError.response) {
       return "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
+    }
+
+    const apiMessage = axiosError.response.data?.message;
+    if (typeof apiMessage === "string" && apiMessage.trim().length > 0) {
+      const msgLower = apiMessage.toLowerCase();
+      if (!msgLower.includes("sql") && !msgLower.includes("line ") && !msgLower.includes("c:\\")) {
+        return apiMessage;
+      }
     }
 
     const status = axiosError.response.status;

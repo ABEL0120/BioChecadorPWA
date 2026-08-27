@@ -21,6 +21,13 @@ export interface TurnoDetalleDto {
   toleranciaComidaMinutos?: number;
 }
 
+export interface HorarioDto {
+  descripcion?: string;
+  diasPatron?: string;
+  secuenciaDias?: string;
+  dias: TurnoDetalleDto[];
+}
+
 export interface EstadoEmpleadoDto {
   existe: boolean;
   tieneBiometria: boolean;
@@ -33,7 +40,24 @@ export interface EstadoEmpleadoDto {
   longitudEmpresa?: number;
   radioToleranciaMetros?: number;
   ultimoMovimientoHoy?: string;
-  horario?: TurnoDetalleDto[];
+  horario?: HorarioDto | TurnoDetalleDto[];
+  trabajoRemoto?: string;
+}
+
+export interface HistoricoAMNDto {
+  rfc: string;
+  numeroCompania: number;
+}
+
+export interface HistoricoAMNResponse {
+  numero: number;
+  rfc: string;
+  numeroCompania: number;
+  fechaHora: string;
+  latitud: number;
+  longitud: number;
+  dispositivoNombre: string;
+  tipoMovimiento: string;
 }
 
 export type VerificarRfcResponse = EstadoEmpleadoDto;
@@ -62,7 +86,7 @@ export interface MarcarAsistenciaRequest {
   latitud: number;
   longitud: number;
   dispositivo: string;
-  tipoMovimiento: "ENTRADA" | "SALIDA" | "RETARDO";
+  tipoMovimiento: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA";
 }
 
 export interface RegistroChecadaResponseDto {

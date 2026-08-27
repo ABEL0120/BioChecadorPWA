@@ -9,6 +9,7 @@ import {
   EnrolarBiometriaRequest,
   MarcarAsistenciaRequest,
   RegistroChecadaResponseDto,
+  HistoricoAMNResponse,
 } from "../types/api";
 
 export const checadorApi = {
@@ -38,6 +39,7 @@ export const checadorApi = {
         radioToleranciaMetros:
           raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
         ultimoMovimientoHoy: raw.ultimoMovimientoHoy ?? raw.UltimoMovimientoHoy,
+        trabajoRemoto: raw.trabajoRemoto ?? raw.TrabajoRemoto,
         horario: raw.horario ?? raw.Horario,
       };
 
@@ -89,5 +91,34 @@ export const checadorApi = {
       ApiResponse<RegistroChecadaResponseDto>
     >(API_ENDPOINTS.CHECADOR.MARCAR, payload);
     return response.data;
+  },
+
+  consultarHistorico: async (
+    rfc: string,
+    numeroCompania: number,
+  ): Promise<ApiResponse<HistoricoAMNResponse[]>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      API_ENDPOINTS.CHECADOR.HISTORICO,
+      {
+        rfc,
+        numeroCompania,
+      }
+    );
+    
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      response.data.data = response.data.data.map((raw: any) => ({
+        ...raw,
+        numero: raw.numero ?? raw.Numero,
+        rfc: raw.rfc ?? raw.Rfc,
+        numeroCompania: raw.numeroCompania ?? raw.NumeroCompania,
+        fechaHora: raw.fechaHora ?? raw.FechaHora,
+        latitud: raw.latitud ?? raw.Latitud,
+        longitud: raw.longitud ?? raw.Longitud,
+        dispositivoNombre: raw.dispositivoNombre ?? raw.DispositivoNombre,
+        tipoMovimiento: raw.tipoMovimiento ?? raw.TipoMovimiento
+      }));
+    }
+
+    return response.data as ApiResponse<HistoricoAMNResponse[]>;
   },
 };

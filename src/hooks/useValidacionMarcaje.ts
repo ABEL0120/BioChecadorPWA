@@ -6,7 +6,7 @@ export interface ValidacionMarcajeResult {
   isValido: boolean;
   motivoBloqueo: string | null;
   mensajeAdvertencia: string | null;
-  siguienteMovimiento: "ENTRADA" | "SALIDA" | "RETARDO";
+  siguienteMovimiento: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA";
   distanciaMetros: number | null;
 }
 
@@ -66,31 +66,51 @@ export const useValidacionMarcaje = (
       try {
         let isDentroDeRango = true;
         let distancia = null;
+        let mensajeAdvertenciaLocal = null;
+        let motivoBloqueoLocal = null;
+
         if (
           userLocation &&
           empleado.latitudEmpresa != null &&
           empleado.longitudEmpresa != null &&
           empleado.radioToleranciaMetros != null
         ) {
-          distancia = calcularDistanciaHaversine(
-            userLocation.latitud,
-            userLocation.longitud,
-            empleado.latitudEmpresa,
-            empleado.longitudEmpresa,
-          );
-          isDentroDeRango =
-            distancia <= (empleado.radioToleranciaMetros || 150);
+          if (empleado.trabajoRemoto === "S") {
+            isDentroDeRango = true;
+            motivoBloqueoLocal = null;
+            mensajeAdvertenciaLocal = "Home Office detectado: ubicación guardada.";
+          } else {
+            const d = calcularDistanciaHaversine(
+              userLocation.latitud,
+              userLocation.longitud,
+              empleado.latitudEmpresa,
+              empleado.longitudEmpresa,
+            );
+            distancia = d;
+
+            const umbralGps = 15;
+            const radioEfectivo = empleado.radioToleranciaMetros + umbralGps;
+
+            if (d <= radioEfectivo) {
+              isDentroDeRango = true;
+            } else {
+              motivoBloqueoLocal = `Fuera del área permitida (a ${Math.round(
+                d,
+              )}m, límite: ${empleado.radioToleranciaMetros}m).`;
+              isDentroDeRango = false;
+            }
+          }
         }
 
-        if (!isDentroDeRango && distancia !== null) {
+        if (!isDentroDeRango) {
           setResult({
             isValido: false,
-            motivoBloqueo: `Fuera de sucursal por ${Math.round(distancia - (empleado.radioToleranciaMetros || 150))}m`,
-            mensajeAdvertencia: null,
-            siguienteMovimiento: (empleado.ultimoMovimientoHoy === "ENTRADA"
+            motivoBloqueo: motivoBloqueoLocal,
+            mensajeAdvertencia: mensajeAdvertenciaLocal,
+            siguienteMovimiento: (empleado.ultimoMovimientoHoy === "ENTRADA" || empleado.ultimoMovimientoHoy === "RETARDO" || empleado.ultimoMovimientoHoy === "ENTRADA_COMIDA"
               ? "SALIDA"
               : "ENTRADA") as any,
-            distanciaMetros: Math.round(distancia),
+            distanciaMetros: distancia !== null ? Math.round(distancia) : null,
           });
           return;
         }
@@ -110,8 +130,8 @@ export const useValidacionMarcaje = (
         }
 
         if (!horarioArray || horarioArray.length === 0) {
-          let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" =
-            empleado.ultimoMovimientoHoy === "ENTRADA" ? "SALIDA" : "ENTRADA";
+          let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA" =
+            (empleado.ultimoMovimientoHoy === "ENTRADA" || empleado.ultimoMovimientoHoy === "RETARDO" || empleado.ultimoMovimientoHoy === "ENTRADA_COMIDA") ? "SALIDA" : "ENTRADA";
           setResult({
             isValido: true,
             motivoBloqueo: null,
@@ -163,12 +183,30 @@ export const useValidacionMarcaje = (
           return;
         }
 
-        let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" = "ENTRADA";
+        const now = new Date();
+        let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA" = "ENTRADA";
         const ultimo = empleado.ultimoMovimientoHoy;
 
         if (!ultimo) {
           nextMovement = "ENTRADA";
         } else if (ultimo === "ENTRADA" || ultimo === "RETARDO") {
+          if (turnoHoy.salidaComida && turnoHoy.regresoComida) {
+            const salidaComidaTime = parseTimeToDate(turnoHoy.salidaComida);
+            const regresoComidaTime = parseTimeToDate(turnoHoy.regresoComida);
+            const toleranciaMin = turnoHoy.toleranciaComidaMinutos || 0;
+            const limiteComidaTime = new Date(regresoComidaTime.getTime() + toleranciaMin * 60000);
+
+            if (now.getTime() >= salidaComidaTime.getTime() && now.getTime() <= limiteComidaTime.getTime()) {
+              nextMovement = "SALIDA_COMIDA";
+            } else {
+              nextMovement = "SALIDA";
+            }
+          } else {
+            nextMovement = "SALIDA";
+          }
+        } else if (ultimo === "SALIDA_COMIDA") {
+          nextMovement = "ENTRADA_COMIDA";
+        } else if (ultimo === "ENTRADA_COMIDA") {
           nextMovement = "SALIDA";
         } else if (ultimo === "SALIDA") {
           setResult({
@@ -183,7 +221,6 @@ export const useValidacionMarcaje = (
           nextMovement = "ENTRADA";
         }
 
-        const now = new Date();
         let motivoBloqueo = null;
         let mensajeAdvertencia = null;
         let isValido = true;
