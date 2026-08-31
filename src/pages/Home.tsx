@@ -6,53 +6,19 @@ import {
   IonTitle,
   IonContent,
   IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
   IonCardContent,
-  IonItem,
-  IonInput,
   IonButton,
   IonIcon,
   IonSpinner,
   IonToast,
-  IonBadge,
-  IonChip,
-  IonAvatar,
-  IonLabel,
   IonRefresher,
   IonRefresherContent,
-  IonSegment,
-  IonSegmentButton,
   IonAlert,
   IonButtons,
-  IonMenuToggle,
-  IonMenu,
   IonMenuButton,
   IonModal,
 } from "@ionic/react";
-import {
-  searchOutline,
-  fingerPrintOutline,
-  businessOutline,
-  locationOutline,
-  alertCircleOutline,
-  shieldCheckmarkOutline,
-  personOutline,
-  timeOutline,
-  refreshOutline,
-  arrowForwardOutline,
-  radioOutline,
-  checkmarkCircleOutline,
-  navigateOutline,
-  logInOutline,
-  logOutOutline,
-  mapOutline,
-  locateOutline,
-  cloudOfflineOutline,
-} from "ionicons/icons";
-import { checadorApi } from "../api/checadorApi";
-import { EstadoEmpleadoDto, RegistroChecadaResponseDto } from "../types/api";
+import { timeOutline, radioOutline } from "ionicons/icons";
 import { useReloj } from "../hooks/useReloj";
 import { FormularioBusquedaEmpleado } from "../components/FormularioBusquedaEmpleado";
 import { InfoEmpleado } from "../components/InfoEmpleado";
@@ -80,12 +46,10 @@ export const Home: React.FC = () => {
     motivoBloqueo,
     mensajeAdvertencia,
     siguienteMovimiento,
-    distanciaMetros,
     toleranciaDeadline,
     registroResult,
     errorMsg,
     setErrorMsg,
-    biometricAvailable,
     toastState,
     setToastState,
     alertState,
@@ -98,14 +62,13 @@ export const Home: React.FC = () => {
     handleMarcarAsistencia,
     handleSolicitarReinicio,
     enviarSolicitudReinicio,
-    limpiarBusqueda,
     logout,
     hasPendingSolicitud,
     showSolicitudModal,
     setShowSolicitudModal,
     motivoSolicitud,
     setMotivoSolicitud,
-    enviandoSolicitud
+    enviandoSolicitud,
   } = useHome();
 
   const currentTime = useReloj();
@@ -118,8 +81,8 @@ export const Home: React.FC = () => {
             <IonMenuButton />
           </IonButtons>
 
-          <IonTitle className="font-black tracking-tight text-left text-slate-900 pl-15">
-            Reloj Nomina Test
+          <IonTitle className="font-black tracking-tight text-slate-900">
+            Reloj Nomina
           </IonTitle>
           {resultado && (
             <IonButtons slot="end" className="pr-2">
@@ -275,18 +238,20 @@ export const Home: React.FC = () => {
         <IonModal
           isOpen={showSolicitudModal}
           onDidDismiss={() => setShowSolicitudModal(false)}
-          initialBreakpoint={0.75}
-          breakpoints={[0, 0.75, 1]}
+          initialBreakpoint={1}
+          breakpoints={[0, 1]}
           className="bottom-modal"
         >
-          <div className="p-6 bg-white h-full flex flex-col pt-10">
-            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-            <IonIcon icon={shieldCheckmarkOutline} className="text-4xl text-blue-600 mb-3 mx-auto" />
-            <h2 className="text-xl font-black text-slate-900 text-center mb-2">Reinicio de Biometría</h2>
+          <div className="p-6 bg-white h-full flex flex-col pt-6">
+            <h2 className="text-xl font-black text-slate-900 text-center mb-2">
+              Reinicio de Biometría
+            </h2>
             <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
-              Si cambiaste de celular o tienes problemas con el sensor, ingresa el motivo para que un administrador autorice el registro de tu nuevo dispositivo.
+              Si cambiaste de celular o tienes problemas con el sensor, ingresa
+              el motivo para que un administrador autorice el registro de tu
+              nuevo dispositivo.
             </p>
-            
+
             <div className="flex-1">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
                 Motivo de la Solicitud
@@ -306,7 +271,11 @@ export const Home: React.FC = () => {
                 onClick={enviarSolicitudReinicio}
                 disabled={enviandoSolicitud || !motivoSolicitud.trim()}
               >
-                {enviandoSolicitud ? <IonSpinner name="dots" /> : "Enviar Solicitud"}
+                {enviandoSolicitud ? (
+                  <IonSpinner name="dots" />
+                ) : (
+                  "Enviar Solicitud"
+                )}
               </IonButton>
               <IonButton
                 expand="block"

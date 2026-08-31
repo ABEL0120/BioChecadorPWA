@@ -31,7 +31,6 @@ function createPngIcon(size, filename) {
 
   const buffer = PNG.sync.write(png);
   fs.writeFileSync(filename, buffer);
-  console.log(`Generated ${filename} (${size}x${size} px)`);
 }
 
 createPngIcon(192, 'public/pwa-192x192.png');

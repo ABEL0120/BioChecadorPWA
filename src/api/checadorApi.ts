@@ -136,4 +136,22 @@ export const checadorApi = {
     );
     return response.data;
   },
+
+  consultarEstatusSolicitud: async (
+    rfc: string,
+    numeroCompania: number,
+  ): Promise<ApiResponse<any>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<any>>(
+        API_ENDPOINTS.CHECADOR.ESTATUS_SOLICITUD,
+        { rfc, numeroCompania, motivo: "consulta", tipoDispositivo: "consulta" },
+      );
+      return response.data;
+    } catch (err: any) {
+      if (err.response && err.response.data) {
+        return err.response.data;
+      }
+      throw err;
+    }
+  },
 };

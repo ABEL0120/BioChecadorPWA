@@ -11,4 +11,3 @@ fs.writeFileSync('public/icon-192.svg', makeSvg(192));
 fs.writeFileSync('public/icon-512.svg', makeSvg(512));
 fs.writeFileSync('public/pwa-192x192.png', fs.readFileSync('public/favicon.png'));
 fs.writeFileSync('public/pwa-512x512.png', fs.readFileSync('public/favicon.png'));
-console.log('PWA icons created successfully.');

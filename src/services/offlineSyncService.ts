@@ -27,7 +27,6 @@ export const offlineSyncService = {
       existing.push(newPunch);
       await offlineStore.setItem(PENDING_PUNCHES_KEY, existing);
     } catch (error) {
-      console.error("Error al guardar checada offline:", error);
       throw error;
     }
   },
@@ -36,7 +35,6 @@ export const offlineSyncService = {
     try {
       return await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
     } catch (error) {
-      console.error("Error al obtener checadas offline:", error);
       return [];
     }
   },
@@ -47,7 +45,6 @@ export const offlineSyncService = {
       const filtered = existing.filter(punch => punch.id !== id);
       await offlineStore.setItem(PENDING_PUNCHES_KEY, filtered);
     } catch (error) {
-      console.error("Error al eliminar checada offline:", error);
       throw error;
     }
   },
@@ -57,7 +54,6 @@ export const offlineSyncService = {
     try {
       await offlineStore.setItem(key, value);
     } catch (error) {
-      console.error(`Error guardando configuracion ${key}:`, error);
     }
   },
 
@@ -65,7 +61,6 @@ export const offlineSyncService = {
     try {
       return await offlineStore.getItem<T>(key);
     } catch (error) {
-      console.error(`Error obteniendo configuracion ${key}:`, error);
       return null;
     }
   }

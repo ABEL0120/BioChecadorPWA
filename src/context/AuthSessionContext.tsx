@@ -53,7 +53,6 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
           }
         }
       } catch (err) {
-        console.error("Error hydrating session:", err);
       } finally {
         setIsLoadingSession(false);
       }
@@ -79,7 +78,6 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
               syncedAny = true;
             }
           } catch (err: any) {
-            console.error("Error syncing punch:", err);
 
             if (
               err.response &&
@@ -95,7 +93,6 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
           refresh();
         }
       } catch (err) {
-        console.error("Error syncing punches:", err);
       }
     };
 
@@ -146,13 +143,22 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
         return { success: false, message: res.message || "Sesión expirada." };
       }
     } catch (err) {
-      console.error("Error refreshing session:", err);
       return { success: false, message: "Error de red al actualizar." };
     } finally {
       setIsRefreshing(false);
     }
     return { success: false, message: "Error desconocido." };
   };
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) {
+        refresh().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [refresh]);
 
   return (
     <AuthSessionContext.Provider

@@ -26,7 +26,7 @@ export const useHome = () => {
   const [fetchingGps, setFetchingGps] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<GpsLocationResult | null>(null);
 
-  const { user: resultado, login, logout, isLoadingSession } = useAuthSession();
+  const { user: resultado, login, logout, refresh, isLoadingSession } = useAuthSession();
 
   const watchIdRef = useRef<number | null>(null);
 
@@ -37,7 +37,6 @@ export const useHome = () => {
           setUserLocation(loc);
         },
         (err) => {
-          console.error("Error watching GPS:", err);
         }
       );
     } else {
@@ -97,7 +96,6 @@ export const useHome = () => {
           const pending = await offlineSyncService.obtenerChecadasPendientes();
           setHasPendingOffline(pending.some((p) => p.rfc === resultado.rfc));
         } catch (e) {
-          console.error(e);
         }
       } else {
         setHasPendingOffline(false);
@@ -250,6 +248,10 @@ export const useHome = () => {
       if (response.success) {
         login({ ...resultado, tieneBiometria: true });
         setShowReenrollButton(false);
+        
+        localStorage.removeItem(`solicitud_pendiente_${resultado.rfc}`);
+        setHasPendingSolicitud(false);
+
         setAlertState({
           show: true,
           message: "Biometría registrada correctamente.",
@@ -288,7 +290,12 @@ export const useHome = () => {
           message: "Paso 1/2: Obteniendo ubicación (Home Office)...",
           color: "primary",
         });
-        location = await locationService.obtenerUbicacionActual();
+        const isWindows = /Windows/.test(navigator.userAgent);
+        if (isWindows) {
+          location = { latitud: 0, longitud: 0, accuracy: 0 };
+        } else {
+          location = await locationService.obtenerUbicacionActual();
+        }
       } else {
         location = await locationService.obtenerUbicacionAntiTrampa((segs) => {
           setToastState({
@@ -312,7 +319,9 @@ export const useHome = () => {
 
       let canceladoPorSalto = false;
       let watchId: number | null = null;
-      if (navigator.geolocation && resultado.trabajoRemoto !== "S") {
+      const isWindows = /Windows/.test(navigator.userAgent);
+      
+      if (navigator.geolocation && resultado.trabajoRemoto !== "S" && !isWindows) {
         watchId = navigator.geolocation.watchPosition(
           (pos) => {
             const dist = getDistanceFromLatLonInMeters(
@@ -321,7 +330,7 @@ export const useHome = () => {
               pos.coords.latitude,
               pos.coords.longitude
             );
-            if (dist > 40) {
+            if (dist > 500) {
               canceladoPorSalto = true;
             }
           },
@@ -421,6 +430,28 @@ export const useHome = () => {
         String(err)
       ).toLowerCase();
       
+      const msgLower = msg.toLowerCase();
+      if (
+        msgLower.includes("ya existe") || 
+        msgLower.includes("ya hay") || 
+        msgLower.includes("ya se registr") ||
+        msgLower.includes("ya tienes una") || 
+        msgLower.includes("no puedes registrar") ||
+        msgLower.includes("ya registraste") ||
+        msgLower.includes("tienes una") ||
+        msgLower.includes("ya cuentas con") ||
+        msgLower.includes("no se permite registrar")
+      ) {
+        refresh();
+        setAlertState({
+          show: true,
+          message: msg + " La información de tu estado se ha sincronizado automáticamente.",
+          title: "Aviso",
+        });
+        setMarking(false);
+        return;
+      }
+
       if (
         errorString.includes("notallowederror") ||
         errorString.includes("timed out or was not allowed") ||
@@ -489,6 +520,7 @@ export const useHome = () => {
         rfc: resultado.rfc,
         numeroCompania: resultado.numeroCompania || 0,
         motivo: motivoSolicitud.trim(),
+        tipoDispositivo: biometricService.getDeviceName(),
       });
 
       if (resp.success) {

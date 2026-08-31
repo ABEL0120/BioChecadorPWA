@@ -192,7 +192,7 @@ export const useValidacionMarcaje = (
 
         const now = timeService.now();
         let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA" = "ENTRADA";
-        const ultimo = empleado.ultimoMovimientoHoy;
+        const ultimo = (empleado.ultimoMovimientoHoy || "").toUpperCase();
 
         if (!ultimo) {
           nextMovement = "ENTRADA";
@@ -201,9 +201,10 @@ export const useValidacionMarcaje = (
             const salidaComidaTime = parseTimeToDate(turnoHoy.salidaComida);
             const regresoComidaTime = parseTimeToDate(turnoHoy.regresoComida);
             const toleranciaMin = turnoHoy.toleranciaComidaMinutos || 0;
-            const limiteComidaTime = new Date(regresoComidaTime.getTime() + toleranciaMin * 60000);
+            const limiteComidaTime = new Date(regresoComidaTime.getTime() + (toleranciaMin * 60000));
 
-            if (now.getTime() >= salidaComidaTime.getTime() && now.getTime() <= limiteComidaTime.getTime()) {
+            // Permite SALIDA_COMIDA si estamos al menos a la hora de salida de comida, o un poco antes (opcional)
+            if (now.getTime() >= (salidaComidaTime.getTime() - 600000) && now.getTime() <= limiteComidaTime.getTime()) {
               nextMovement = "SALIDA_COMIDA";
             } else {
               nextMovement = "SALIDA";
@@ -211,9 +212,9 @@ export const useValidacionMarcaje = (
           } else {
             nextMovement = "SALIDA";
           }
-        } else if (ultimo === "SALIDA_COMIDA") {
+        } else if (ultimo === "SALIDA_COMIDA" || ultimo === "SALIDA_COMER") {
           nextMovement = "ENTRADA_COMIDA";
-        } else if (ultimo === "ENTRADA_COMIDA") {
+        } else if (ultimo === "ENTRADA_COMIDA" || ultimo === "ENTRADA_COMER") {
           nextMovement = "SALIDA";
         } else if (ultimo === "SALIDA") {
           setResult({
@@ -254,7 +255,6 @@ export const useValidacionMarcaje = (
           } else if (nextMovement === "SALIDA" && turnoHoy.salida) {
           }
         } catch (e) {
-          console.error("Error parseando horario", e);
         }
 
         setResult({
@@ -266,7 +266,6 @@ export const useValidacionMarcaje = (
           toleranciaDeadline: currentToleranciaDeadline,
         });
       } catch (error) {
-        console.error("Crash prevented in validation hook", error);
         setResult({
           isValido: false,
           motivoBloqueo: "Error calculando validación (Contacte soporte)",

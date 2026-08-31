@@ -109,4 +109,5 @@ export interface SolicitudCreacionDto {
   rfc: string;
   numeroCompania: number;
   motivo: string;
+  tipoDispositivo: string;
 }

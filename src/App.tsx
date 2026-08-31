@@ -14,6 +14,7 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { MenuLateral } from "./components/MenuLateral";
 import HorarioPage from "./pages/HorarioPage";
 import HistorialPage from "./pages/HistorialPage";
+import SolicitudesPage from "./pages/SolicitudesPage";
 import { IonSplitPane } from "@ionic/react";
 
 import "@ionic/react/css/core.css";
@@ -53,7 +54,7 @@ function UpdatePrompt() {
       }
     },
     onRegisterError(error) {
-      console.error("SW registration error", error);
+
     },
   });
 
@@ -96,6 +97,9 @@ const App: React.FC = () => (
               </Route>
               <Route exact path="/historial">
                 <HistorialPage />
+              </Route>
+              <Route exact path="/solicitudes">
+                <SolicitudesPage />
               </Route>
               <Route exact path="/">
                 <Redirect to="/home" />

@@ -9,11 +9,24 @@ export const formatError = (error: any, defaultMessage: string = "Ha ocurrido un
       return "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
     }
 
-    const apiMessage = axiosError.response.data?.message;
-    if (typeof apiMessage === "string" && apiMessage.trim().length > 0) {
-      const msgLower = apiMessage.toLowerCase();
-      if (!msgLower.includes("sql") && !msgLower.includes("line ") && !msgLower.includes("c:\\")) {
-        return apiMessage;
+    const responseData = axiosError.response.data;
+    
+    if (responseData && typeof responseData === "object") {
+      if (responseData.errors && typeof responseData.errors === "object") {
+        const errorMessages = Object.values(responseData.errors)
+          .flat()
+          .join(" | ");
+        if (errorMessages) {
+          return errorMessages;
+        }
+      }
+
+      const apiMessage = responseData.message;
+      if (typeof apiMessage === "string" && apiMessage.trim().length > 0) {
+        const msgLower = apiMessage.toLowerCase();
+        if (!msgLower.includes("sql") && !msgLower.includes("line ") && !msgLower.includes("c:\\")) {
+          return apiMessage;
+        }
       }
     }
 

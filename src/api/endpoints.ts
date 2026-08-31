@@ -6,6 +6,7 @@ export const API_ENDPOINTS = {
     MARCAR: "/checador/marcar",
     HISTORICO: "/checador/historico",
     SOLICITUD: "/checador/solicitud",
+    ESTATUS_SOLICITUD: "/checador/estatus-solicitud",
   },
   AUTH: {
     LOGIN: "/auth/login",

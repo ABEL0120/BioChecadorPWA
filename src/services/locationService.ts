@@ -24,6 +24,8 @@ export function getDistanceFromLatLonInMeters(
   return d;
 }
 
+const isWindows = /Windows/.test(navigator.userAgent);
+
 export const locationService = {
   obtenerUbicacionAntiTrampa: (
     onProgress?: (segs: number) => void,
@@ -35,6 +37,12 @@ export const locationService = {
             "Tu navegador o dispositivo no soporta geolocalización GPS.",
           ),
         );
+        return;
+      }
+
+      if (isWindows) {
+        if (onProgress) onProgress(0);
+        locationService.obtenerUbicacionActual().then(resolve).catch(reject);
         return;
       }
 
@@ -71,10 +79,10 @@ export const locationService = {
                 });
               },
               () => {},
-              { enableHighAccuracy: false, maximumAge: 0, timeout: 3000 }
+              { enableHighAccuracy: false, maximumAge: 0, timeout: 3000 },
             );
           },
-          { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 },
+          { enableHighAccuracy: !isWindows, maximumAge: 0, timeout: 3000 },
         );
       }, 1000);
 
@@ -103,12 +111,12 @@ export const locationService = {
               p2.longitud,
             );
             const timeDiffSecs = (p2.timestamp - p1.timestamp) / 1000;
-            // Solo analizamos la velocidad si hubo un movimiento mayor a 20 metros (para ignorar ruido pequeño)
-            if (timeDiffSecs > 0 && distMeters > 20) {
+            // Solo analizamos la velocidad si hubo un movimiento mayor a 200 metros (para ignorar correcciones naturales del GPS)
+            if (timeDiffSecs > 0 && distMeters > 200) {
               const speedMetersPerSec = distMeters / timeDiffSecs;
               const speedKmh = speedMetersPerSec * 3.6;
               // OJO: VELOCIDAD MAXIMA. Súbele el número si está saltando mucho en tu empresa real.
-              const MAX_SPEED_KMH = 100;
+              const MAX_SPEED_KMH = 300;
               if (speedKmh > MAX_SPEED_KMH) {
                 rejected = true;
                 reject(
@@ -221,7 +229,7 @@ export const locationService = {
           reject(new Error(mensaje));
         },
         {
-          enableHighAccuracy: true,
+          enableHighAccuracy: !isWindows,
           timeout: 15000,
           maximumAge: 15000,
         },
@@ -265,7 +273,7 @@ export const locationService = {
         onError(new Error(mensaje));
       },
       {
-        enableHighAccuracy: true,
+        enableHighAccuracy: !isWindows,
         timeout: 15000,
         maximumAge: 15000,
       },
@@ -302,15 +310,15 @@ export const locationService = {
             );
             const timeDiffSecs = (p2.timestamp - p1.timestamp) / 1000;
 
-            // Solo analizamos velocidad si el salto fue mayor a 20 metros
-            if (timeDiffSecs > 0 && distMeters > 20) {
+            // Solo analizamos velocidad si el salto fue mayor a 200 metros
+            if (timeDiffSecs > 0 && distMeters > 200) {
               const speedMetersPerSec = distMeters / timeDiffSecs;
               const speedKmh = speedMetersPerSec * 3.6;
 
-              // 100 km/h es imposible para una persona. Si salta así de rápido, es Fake GPS seguro.
-              if (speedKmh > 100) {
+              // 300 km/h es imposible para una persona. Si salta así de rápido y más de 200m, es Fake GPS.
+              if (speedKmh > 300) {
                 onAnomalyDetected(
-                  "Alerta de Seguridad: Se ha detectado un salto GPS malicioso (Fake GPS). Tu sesión será cerrada.",
+                  "Se ha detectado un salto GPS malicioso. Tu sesión será cerrada.",
                 );
                 return;
               }
@@ -318,7 +326,7 @@ export const locationService = {
           }
         },
         () => {},
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 },
+        { enableHighAccuracy: !isWindows, maximumAge: 0, timeout: 5000 },
       );
     }, 1000);
 

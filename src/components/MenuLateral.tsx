@@ -12,9 +12,15 @@ import {
   IonMenuToggle,
   IonFooter,
   useIonToast,
-  IonSpinner
+  IonSpinner,
 } from "@ionic/react";
-import { homeOutline, timeOutline, calendarOutline, syncOutline } from "ionicons/icons";
+import {
+  homeOutline,
+  timeOutline,
+  calendarOutline,
+  syncOutline,
+  mailOpenOutline,
+} from "ionicons/icons";
 import { useLocation } from "react-router-dom";
 import { useAuthSession } from "../context/AuthSessionContext";
 
@@ -35,8 +41,8 @@ export const MenuLateral: React.FC = () => {
           const next = prev - 1;
           cooldownRef.current = next;
           if (next <= 0) {
-             clearInterval(interval);
-             return 0;
+            clearInterval(interval);
+            return 0;
           }
           return next;
         });
@@ -50,7 +56,7 @@ export const MenuLateral: React.FC = () => {
       present({
         message: "Inicia sesión primero para actualizar datos.",
         duration: 3000,
-        color: "warning"
+        color: "warning",
       });
       return;
     }
@@ -61,28 +67,28 @@ export const MenuLateral: React.FC = () => {
       setPenaltySeconds(newPenalty);
       setCooldown(newPenalty);
       cooldownRef.current = newPenalty;
-      return; 
+      return;
     }
-    
+
     setIsRefreshing(true);
     const result = await refresh();
     setIsRefreshing(false);
-    
+
     if (result.success) {
-      setPenaltySeconds(10); 
+      setPenaltySeconds(10);
       setCooldown(10);
       cooldownRef.current = 10;
     } else {
-      setPenaltySeconds(10); 
+      setPenaltySeconds(10);
       setCooldown(10);
       cooldownRef.current = 10;
     }
-    
+
     present({
       message: result.message,
       duration: 3000,
       color: result.success ? "success" : "warning",
-      position: "top"
+      position: "top",
     });
   };
 
@@ -101,6 +107,11 @@ export const MenuLateral: React.FC = () => {
       title: "Mi Horario",
       url: "/horario",
       icon: timeOutline,
+    },
+    {
+      title: "Solicitudes",
+      url: "/solicitudes",
+      icon: mailOpenOutline,
     },
   ];
 
@@ -150,19 +161,22 @@ export const MenuLateral: React.FC = () => {
           <button
             onClick={handleRefresh}
             className={`flex items-center justify-center gap-2 w-full py-3 mb-8 rounded-xl font-bold transition-colors ${
-              cooldown > 0 
-                ? "bg-slate-200 text-slate-500 cursor-not-allowed" 
+              cooldown > 0
+                ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                 : "bg-blue-100 text-blue-700 hover:bg-blue-200"
             }`}
           >
             {isRefreshing ? (
               <IonSpinner name="crescent" className="w-5 h-5" />
             ) : (
-              <IonIcon icon={syncOutline} className={`text-xl ${cooldown > 0 ? "opacity-50" : ""}`} />
+              <IonIcon
+                icon={syncOutline}
+                className={`text-xl ${cooldown > 0 ? "opacity-50" : ""}`}
+              />
             )}
             {cooldown > 0 ? `Espera ${cooldown}s` : "Actualizar Datos"}
           </button>
-          
+
           <button
             onClick={() => window.location.reload()}
             className="text-[10px] text-slate-400 font-medium tracking-wide uppercase hover:text-slate-600 transition-colors bg-transparent border-none pb-2"
