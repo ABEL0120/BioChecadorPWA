@@ -42,6 +42,7 @@ export interface EstadoEmpleadoDto {
   ultimoMovimientoHoy?: string;
   horario?: HorarioDto | TurnoDetalleDto[];
   trabajoRemoto?: string;
+  numeroEmpleado?: number;
 }
 
 export interface HistoricoAMNDto {
@@ -86,7 +87,12 @@ export interface MarcarAsistenciaRequest {
   latitud: number;
   longitud: number;
   dispositivo: string;
-  tipoMovimiento: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA";
+  tipoMovimiento:
+    | "ENTRADA"
+    | "SALIDA"
+    | "RETARDO"
+    | "SALIDA_COMIDA"
+    | "ENTRADA_COMIDA";
 }
 
 export interface RegistroChecadaResponseDto {
@@ -97,4 +103,10 @@ export interface RegistroChecadaResponseDto {
   distanciaMetros: number;
   dentroDeRango: boolean;
   mensaje: string;
+}
+
+export interface SolicitudCreacionDto {
+  rfc: string;
+  numeroCompania: number;
+  motivo: string;
 }

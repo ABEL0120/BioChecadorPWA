@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { EstadoEmpleadoDto, TurnoDetalleDto } from "../types/api";
 import { GpsLocationResult } from "../services/locationService";
+import { timeService } from "../services/timeService";
 
 export interface ValidacionMarcajeResult {
   isValido: boolean;
@@ -8,6 +9,7 @@ export interface ValidacionMarcajeResult {
   mensajeAdvertencia: string | null;
   siguienteMovimiento: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA";
   distanciaMetros: number | null;
+  toleranciaDeadline: Date | null;
 }
 
 export const calcularDistanciaHaversine = (
@@ -33,7 +35,7 @@ export const calcularDistanciaHaversine = (
 
 const parseTimeToDate = (timeStr: string): Date => {
   const [hours, minutes] = timeStr.split(":").map(Number);
-  const d = new Date();
+  const d = timeService.now();
   d.setHours(hours, minutes, 0, 0);
   return d;
 };
@@ -48,6 +50,7 @@ export const useValidacionMarcaje = (
     mensajeAdvertencia: null,
     siguienteMovimiento: "ENTRADA",
     distanciaMetros: null,
+    toleranciaDeadline: null,
   });
 
   useEffect(() => {
@@ -58,6 +61,7 @@ export const useValidacionMarcaje = (
         mensajeAdvertencia: null,
         siguienteMovimiento: "ENTRADA",
         distanciaMetros: null,
+        toleranciaDeadline: null,
       });
       return;
     }
@@ -111,6 +115,7 @@ export const useValidacionMarcaje = (
               ? "SALIDA"
               : "ENTRADA") as any,
             distanciaMetros: distancia !== null ? Math.round(distancia) : null,
+            toleranciaDeadline: null,
           });
           return;
         }
@@ -138,6 +143,7 @@ export const useValidacionMarcaje = (
             mensajeAdvertencia: null,
             siguienteMovimiento: nextMovement,
             distanciaMetros: distancia ? Math.round(distancia) : null,
+            toleranciaDeadline: null,
           });
           return;
         }
@@ -158,7 +164,7 @@ export const useValidacionMarcaje = (
           "viernes",
           "sabado",
         ];
-        const nombreHoyJS = diasSemanaJS[new Date().getDay()];
+        const nombreHoyJS = diasSemanaJS[timeService.now().getDay()];
 
         let turnoHoy = horarioArray.find(
           (h) => normalizeStr(h.diaNombre) === nombreHoyJS,
@@ -179,11 +185,12 @@ export const useValidacionMarcaje = (
             mensajeAdvertencia: null,
             siguienteMovimiento: "ENTRADA",
             distanciaMetros: distancia ? Math.round(distancia) : null,
+            toleranciaDeadline: null,
           });
           return;
         }
 
-        const now = new Date();
+        const now = timeService.now();
         let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA" = "ENTRADA";
         const ultimo = empleado.ultimoMovimientoHoy;
 
@@ -215,6 +222,7 @@ export const useValidacionMarcaje = (
             mensajeAdvertencia: null,
             siguienteMovimiento: "ENTRADA",
             distanciaMetros: distancia ? Math.round(distancia) : null,
+            toleranciaDeadline: null,
           });
           return;
         } else {
@@ -224,6 +232,7 @@ export const useValidacionMarcaje = (
         let motivoBloqueo = null;
         let mensajeAdvertencia = null;
         let isValido = true;
+        let currentToleranciaDeadline: Date | null = null;
 
         try {
           if (nextMovement === "ENTRADA" && turnoHoy.entrada) {
@@ -234,6 +243,8 @@ export const useValidacionMarcaje = (
             if (diffMinutes < -30) {
               isValido = false;
               motivoBloqueo = "Muy temprano (Permitido 30 min antes)";
+            } else if (diffMinutes >= 0 && diffMinutes <= tolerancia && tolerancia > 0) {
+              currentToleranciaDeadline = new Date(entradaTime.getTime() + tolerancia * 60000);
             } else if (diffMinutes > tolerancia) {
               const diffHours = Math.floor(diffMinutes / 60);
               const diffMinutesOnly = Math.floor(diffMinutes % 60);
@@ -252,6 +263,7 @@ export const useValidacionMarcaje = (
           mensajeAdvertencia,
           siguienteMovimiento: nextMovement,
           distanciaMetros: distancia ? Math.round(distancia) : null,
+          toleranciaDeadline: currentToleranciaDeadline,
         });
       } catch (error) {
         console.error("Crash prevented in validation hook", error);
@@ -261,12 +273,13 @@ export const useValidacionMarcaje = (
           mensajeAdvertencia: null,
           siguienteMovimiento: "ENTRADA",
           distanciaMetros: null,
+          toleranciaDeadline: null,
         });
       }
     };
 
     validate();
-    const interval = setInterval(validate, 60000);
+    const interval = setInterval(validate, 10000);
     return () => clearInterval(interval);
   }, [empleado, userLocation]);
 

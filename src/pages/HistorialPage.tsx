@@ -13,6 +13,7 @@ import {
 } from "@ionic/react";
 import { useAuthSession } from "../context/AuthSessionContext";
 import { checadorApi } from "../api/checadorApi";
+import { timeService } from "../services/timeService";
 import { HistoricoAMNResponse, TurnoDetalleDto } from "../types/api";
 import {
   timeOutline,
@@ -21,6 +22,8 @@ import {
   checkmarkCircleOutline,
   closeCircleOutline,
   filterOutline,
+  chevronDownOutline,
+  chevronUpOutline,
 } from "ionicons/icons";
 
 interface DayData {
@@ -38,6 +41,145 @@ interface DayData {
     | "INCOMPLETO";
   minutosRetardo: number;
 }
+
+const DiaHistorialItem: React.FC<{ dia: DayData; getSemaforoUI: any; formatDelay: any }> = ({ dia, getSemaforoUI, formatDelay }) => {
+  const [expanded, setExpanded] = useState(false);
+  const ui = getSemaforoUI(dia.estado);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden w-full box-border transition-all duration-300">
+      <div 
+        className="bg-slate-50/50 border-b border-slate-200 px-3 sm:px-4 py-3 flex justify-between items-center w-full box-border cursor-pointer active:bg-slate-100 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <IonIcon
+            icon={calendarOutline}
+            className="text-slate-400 text-base flex-shrink-0"
+          />
+          <span className="font-black text-slate-800 text-xs sm:text-sm capitalize truncate">
+            {dia.fecha.toLocaleDateString("es-MX", {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+            })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {ui && (
+            <div
+              className={`px-2 py-1 rounded-lg border ${ui.bg} ${ui.border} flex items-center gap-1 flex-shrink-0`}
+            >
+              <IonIcon
+                icon={ui.icon}
+                className={`${ui.textCol} text-xs`}
+              />
+              <span
+                className={`${ui.textCol} text-[9px] sm:text-[10px] font-black uppercase tracking-wide whitespace-nowrap`}
+              >
+                {ui.text}
+              </span>
+            </div>
+          )}
+          <IonIcon 
+            icon={expanded ? chevronUpOutline : chevronDownOutline} 
+            className="text-slate-400 text-lg transition-transform duration-300"
+          />
+        </div>
+      </div>
+
+      <div className={`overflow-hidden transition-all duration-300 ${expanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="p-3 sm:p-4 w-full box-border">
+          {dia.estado === "FALTA" ? (
+            <div className="text-center py-4 bg-red-50/30 rounded-xl border border-red-100 border-dashed w-full box-border">
+              <p className="text-red-600 font-bold text-xs sm:text-sm">
+                No se registró asistencia
+              </p>
+              {dia.turno?.entrada && (
+                <p className="text-red-400 font-medium text-[10px] sm:text-xs mt-1">
+                  Tu entrada esperada era a las {dia.turno.entrada}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 w-full box-border">
+              {dia.turno?.entrada && dia.estado !== "DESCANSO" && (
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full">
+                  <div className="bg-slate-50 rounded-xl p-2 sm:p-3 border border-slate-100 flex flex-col justify-center min-w-0">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5 truncate">
+                      Esperada
+                    </p>
+                    <p className="font-black text-slate-700 flex items-center gap-1 text-xs sm:text-sm truncate">
+                      <IonIcon
+                        icon={timeOutline}
+                        className="text-slate-400 flex-shrink-0"
+                      />
+                      {dia.turno.entrada}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-2 sm:p-3 border border-slate-100 flex flex-col justify-center min-w-0">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5 truncate">
+                      Retraso
+                    </p>
+                    <p
+                      className={`font-black text-xs sm:text-sm truncate ${dia.minutosRetardo > 0 ? "text-red-600" : "text-green-600"}`}
+                    >
+                      {formatDelay(dia.minutosRetardo)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 mt-1 w-full box-border">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                  Movimientos del día
+                </p>
+                {dia.registros.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic ml-1">
+                    Sin movimientos registrados.
+                  </p>
+                ) : (
+                  dia.registros.map((reg, ridx) => (
+                    <div
+                      key={ridx}
+                      className="flex items-center justify-between p-2 sm:p-3 rounded-xl border border-slate-100 bg-white shadow-xs w-full box-border gap-2"
+                    >
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <IonBadge
+                          color={
+                            reg.tipoMovimiento.toUpperCase() === "ENTRADA"
+                              ? "primary"
+                              : "secondary"
+                          }
+                          className="px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md text-[9px] sm:text-[10px] flex-shrink-0"
+                        >
+                          {reg.tipoMovimiento}
+                        </IonBadge>
+                        <div className="font-bold text-slate-700 text-xs sm:text-sm flex items-center gap-1 truncate">
+                          <IonIcon
+                            icon={timeOutline}
+                            className="text-slate-400 flex-shrink-0"
+                          />
+                          {new Date(reg.fechaHora).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-slate-400 font-medium truncate max-w-[40%] text-right">
+                        {reg.dispositivoNombre || "N/D"}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const HistorialPage: React.FC = () => {
   const { user } = useAuthSession();
@@ -175,8 +317,8 @@ const HistorialPage: React.FC = () => {
             r.tipoMovimiento.toUpperCase() === "RETARDO",
         );
         if (!entradaReg) {
-          const ahora = new Date();
-          if (fechaActual > ahora) {
+          const ahora = timeService.now();
+          if (fechaStr === formatDateToYMD(ahora) || fechaActual > ahora) {
             estado = "INCOMPLETO";
           } else {
             estado = "FALTA";
@@ -306,37 +448,37 @@ const HistorialPage: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row gap-4 items-center">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col gap-4 w-full box-border">
+                <div className="flex items-center gap-2">
                   <IonIcon
                     icon={filterOutline}
-                    className="text-slate-400 text-xl"
+                    className="text-slate-400 text-lg"
                   />
                   <span className="font-bold text-slate-700 text-sm">
-                    Fechas:
+                    Filtro por Fechas
                   </span>
                 </div>
-                <div className="flex flex-col sm:flex-row flex-1 w-full gap-3">
-                  <div className="flex-1">
-                    <label className="text-xs text-slate-500 font-medium ml-1">
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  <div className="w-full min-w-0">
+                    <label className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wide ml-1 block mb-1">
                       Inicio
                     </label>
                     <input
                       type="date"
                       value={startDateStr}
                       onChange={(e) => setStartDateStr(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                      className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-colors m-0 box-border"
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="text-xs text-slate-500 font-medium ml-1">
+                  <div className="w-full min-w-0">
+                    <label className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wide ml-1 block mb-1">
                       Fin
                     </label>
                     <input
                       type="date"
                       value={endDateStr}
                       onChange={(e) => setEndDateStr(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                      className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-colors m-0 box-border"
                     />
                   </div>
                 </div>
@@ -347,155 +489,30 @@ const HistorialPage: React.FC = () => {
                   <IonSpinner name="crescent" color="primary" />
                 </div>
               ) : error ? (
-                <div className="p-4 bg-red-50 text-red-600 rounded-xl font-medium border border-red-200">
+                <div className="p-4 bg-red-50 text-red-600 rounded-xl font-medium border border-red-200 text-sm text-center">
                   {error}
                 </div>
               ) : diasDetallados.length === 0 ? (
-                <div className="text-center text-slate-500 font-medium mt-10 bg-white p-8 rounded-3xl border border-slate-200">
+                <div className="text-center text-slate-500 mt-10 bg-white p-8 rounded-3xl border border-slate-200">
                   <IonIcon
                     icon={calendarOutline}
                     className="text-slate-300 text-5xl mb-3 block mx-auto"
                   />
-                  <p className="text-slate-700 font-bold">No hay registros</p>
-                  <p className="text-slate-500 text-sm mt-1">
+                  <p className="text-slate-700 font-bold text-sm">No hay registros</p>
+                  <p className="text-slate-400 text-xs mt-1">
                     No tienes faltas ni asistencias en este rango de fechas.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {diasDetallados.map((dia, idx) => {
-                    const ui = getSemaforoUI(dia.estado);
-                    return (
-                      <div
-                        key={idx}
-                        className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
-                      >
-                        <div className="bg-slate-50/50 border-b border-slate-200 px-4 py-3 flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <IonIcon
-                              icon={calendarOutline}
-                              className="text-slate-400 text-lg"
-                            />
-                            <span className="font-bold text-slate-700 capitalize">
-                              {dia.fecha.toLocaleDateString("es-MX", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                              })}
-                            </span>
-                          </div>
-                          {ui && (
-                            <div
-                              className={`px-2 py-1 rounded-lg border ${ui.bg} ${ui.border} flex items-center gap-1`}
-                            >
-                              <IonIcon
-                                icon={ui.icon}
-                                className={`${ui.textCol} text-sm`}
-                              />
-                              <span
-                                className={`${ui.textCol} text-[10px] font-black uppercase tracking-wide text-center whitespace-nowrap`}
-                              >
-                                {ui.text}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="p-4">
-                          {dia.estado === "FALTA" ? (
-                            <div className="text-center py-5 bg-red-50/30 rounded-xl border border-red-100 border-dashed">
-                              <p className="text-red-600 font-bold text-sm">
-                                No se registró asistencia
-                              </p>
-                              {dia.turno?.entrada && (
-                                <p className="text-red-400 font-medium text-xs mt-1">
-                                  Tu entrada esperada era a las{" "}
-                                  {dia.turno.entrada}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col gap-4">
-                              {dia.turno?.entrada &&
-                                dia.estado !== "DESCANSO" && (
-                                  <div className="flex gap-3">
-                                    <div className="flex-1 bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
-                                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-0.5">
-                                        Esperada
-                                      </p>
-                                      <p className="font-black text-slate-700 flex items-center gap-1 text-sm">
-                                        <IonIcon
-                                          icon={timeOutline}
-                                          className="text-slate-400"
-                                        />
-                                        {dia.turno.entrada}
-                                      </p>
-                                    </div>
-                                    <div className="flex-1 bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-center">
-                                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-0.5">
-                                        Retraso
-                                      </p>
-                                      <p
-                                        className={`font-black text-sm ${dia.minutosRetardo > 0 ? "text-red-600" : "text-green-600"}`}
-                                      >
-                                        {formatDelay(dia.minutosRetardo)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                              <div className="space-y-2 mt-1">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide ml-1">
-                                  Movimientos del día
-                                </p>
-                                {dia.registros.length === 0 ? (
-                                  <p className="text-sm text-slate-500 italic ml-1">
-                                    Sin movimientos registrados.
-                                  </p>
-                                ) : (
-                                  dia.registros.map((reg, ridx) => (
-                                    <div
-                                      key={ridx}
-                                      className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-xs"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <IonBadge
-                                          color={
-                                            reg.tipoMovimiento.toUpperCase() ===
-                                            "ENTRADA"
-                                              ? "primary"
-                                              : "secondary"
-                                          }
-                                          className="px-2 py-1 rounded-md text-[10px]"
-                                        >
-                                          {reg.tipoMovimiento}
-                                        </IonBadge>
-                                        <div className="font-bold text-slate-700 text-sm flex items-center gap-1">
-                                          <IonIcon
-                                            icon={timeOutline}
-                                            className="text-slate-400"
-                                          />
-                                          {new Date(
-                                            reg.fechaHora,
-                                          ).toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })}
-                                        </div>
-                                      </div>
-                                      <div className="text-[10px] text-slate-400 font-medium">
-                                        {reg.dispositivoNombre || "N/D"}
-                                      </div>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="space-y-4 sm:space-y-6 w-full box-border">
+                  {diasDetallados.map((dia, idx) => (
+                    <DiaHistorialItem 
+                      key={idx} 
+                      dia={dia} 
+                      getSemaforoUI={getSemaforoUI} 
+                      formatDelay={formatDelay} 
+                    />
+                  ))}
                 </div>
               )}
             </>

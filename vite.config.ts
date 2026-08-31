@@ -107,6 +107,16 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    allowedHosts: true,
+    proxy: {
+      "/api": {
+        target: "https://localhost:7259",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   test: {
     globals: true,
     environment: "jsdom",

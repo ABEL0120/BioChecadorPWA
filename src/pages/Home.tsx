@@ -29,6 +29,7 @@ import {
   IonMenuToggle,
   IonMenu,
   IonMenuButton,
+  IonModal,
 } from "@ionic/react";
 import {
   searchOutline,
@@ -52,17 +53,11 @@ import {
 } from "ionicons/icons";
 import { checadorApi } from "../api/checadorApi";
 import { EstadoEmpleadoDto, RegistroChecadaResponseDto } from "../types/api";
-import { biometricService } from "../services/biometricService";
-import {
-  locationService,
-  getDistanceFromLatLonInMeters,
-  GpsLocationResult,
-} from "../services/locationService";
-import { GeofenceMap } from "../components/GeofenceMap";
-import { useAuthSession } from "../context/AuthSessionContext";
-import { offlineSyncService } from "../services/offlineSyncService";
-import { useValidacionMarcaje } from "../hooks/useValidacionMarcaje";
-import { formatError } from "../utils/errorHandler";
+import { useReloj } from "../hooks/useReloj";
+import { FormularioBusquedaEmpleado } from "../components/FormularioBusquedaEmpleado";
+import { InfoEmpleado } from "../components/InfoEmpleado";
+import { PanelMarcaje } from "../components/PanelMarcaje";
+import { useHome } from "../hooks/useHome";
 export const Home: React.FC = () => {
   const formatMovementLabel = (mov?: string) => {
     if (!mov) return "CARGANDO...";
@@ -70,453 +65,50 @@ export const Home: React.FC = () => {
     if (mov === "ENTRADA_COMIDA") return "REGRESO DE COMER";
     return mov;
   };
-  const [rfc, setRfc] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [enrolling, setEnrolling] = useState<boolean>(false);
-  const [marking, setMarking] = useState<boolean>(false);
-  const [showReenrollButton, setShowReenrollButton] = useState<boolean>(false);
-  const [fetchingGps, setFetchingGps] = useState<boolean>(false);
-  const [userLocation, setUserLocation] = useState<GpsLocationResult | null>(
-    null,
-  );
-
-  const { user: resultado, login, logout, isLoadingSession } = useAuthSession();
-
-  const watchIdRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (resultado && resultado.existe) {
-      watchIdRef.current = locationService.seguirUbicacionActual(
-        (loc) => {
-          setUserLocation(loc);
-        },
-        (err) => {
-          console.error("Error watching GPS:", err);
-        },
-      );
-    } else {
-      if (watchIdRef.current !== null) {
-        locationService.detenerSeguimiento(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-    }
-    return () => {
-      if (watchIdRef.current !== null) {
-        locationService.detenerSeguimiento(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-    };
-  }, [resultado]);
-
   const {
+    rfc,
+    setRfc,
+    loading,
+    enrolling,
+    marking,
+    showReenrollButton,
+    fetchingGps,
+    userLocation,
+    resultado,
+    isLoadingSession,
     isValido,
     motivoBloqueo,
     mensajeAdvertencia,
     siguienteMovimiento,
     distanciaMetros,
-  } = useValidacionMarcaje(resultado, userLocation);
+    toleranciaDeadline,
+    registroResult,
+    errorMsg,
+    setErrorMsg,
+    biometricAvailable,
+    toastState,
+    setToastState,
+    alertState,
+    setAlertState,
+    hasPendingOffline,
+    handleRefresh,
+    handleObtenerGpsMapa,
+    handleVerificarRfc,
+    handleEnrolarBiometria,
+    handleMarcarAsistencia,
+    handleSolicitarReinicio,
+    enviarSolicitudReinicio,
+    limpiarBusqueda,
+    logout,
+    hasPendingSolicitud,
+    showSolicitudModal,
+    setShowSolicitudModal,
+    motivoSolicitud,
+    setMotivoSolicitud,
+    enviandoSolicitud
+  } = useHome();
 
-  const [registroResult, setRegistroResult] =
-    useState<RegistroChecadaResponseDto | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [biometricAvailable, setBiometricAvailable] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<string>("");
-  const [toastState, setToastState] = useState<{
-    show: boolean;
-    message: string;
-    color: string;
-  }>({
-    show: false,
-    message: "",
-    color: "danger",
-  });
-  const [alertState, setAlertState] = useState<{
-    show: boolean;
-    message: string;
-    title: string;
-  }>({
-    show: false,
-    message: "",
-    title: "",
-  });
-  const [hasPendingOffline, setHasPendingOffline] = useState<boolean>(false);
-
-  useEffect(() => {
-    const checkPending = async () => {
-      if (resultado && !navigator.onLine) {
-        try {
-          const pending = await offlineSyncService.obtenerChecadasPendientes();
-          setHasPendingOffline(pending.some((p) => p.rfc === resultado.rfc));
-        } catch (e) {
-          console.error(e);
-        }
-      } else {
-        setHasPendingOffline(false);
-      }
-    };
-
-    checkPending();
-
-    const handleOffline = () => checkPending();
-    const handleOnline = () => setHasPendingOffline(false);
-
-    window.addEventListener("offline", handleOffline);
-    window.addEventListener("online", handleOnline);
-    return () => {
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("online", handleOnline);
-    };
-  }, [resultado]);
-
-  useEffect(() => {
-    biometricService.isPlatformAvailable().then((available) => {
-      setBiometricAvailable(available);
-    });
-
-    const updateClock = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString("es-MX", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }),
-      );
-    };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    let watchId: number | null = null;
-    if (resultado && resultado.trabajoRemoto !== "S") {
-      watchId = locationService.iniciarMonitoreoContinuoAntiTrampa(
-        (mensaje) => {
-          setAlertState({
-            show: true,
-            title: "Bloqueo de Seguridad (Anti-Salto)",
-            message: mensaje,
-          });
-          limpiarBusqueda();
-        },
-      );
-    }
-
-    return () => {
-      if (watchId !== null) {
-        locationService.detenerMonitoreoAntiTrampa(watchId);
-      }
-    };
-  }, [resultado]);
-
-  const handleRefresh = (event: CustomEvent) => {
-    biometricService.isPlatformAvailable().then((available) => {
-      setBiometricAvailable(available);
-      event.detail.complete();
-    });
-  };
-
-  const handleObtenerGpsMapa = async () => {
-    setFetchingGps(true);
-    try {
-      const loc = await locationService.obtenerUbicacionActual();
-      setUserLocation(loc);
-      setToastState({
-        show: true,
-        message: "Ubicación GPS actualizada en el mapa.",
-        color: "success",
-      });
-    } catch (err: any) {
-      setAlertState({
-        show: true,
-        message: formatError(err, "Error al obtener GPS."),
-        title: "Error GPS",
-      });
-    } finally {
-      setFetchingGps(false);
-    }
-  };
-
-  const handleVerificarRfc = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const cleanRfc = rfc.trim().toUpperCase();
-
-    if (!cleanRfc) {
-      setAlertState({
-        show: true,
-        message: "Ingresa un RFC de 12 o 13 caracteres para consultar.",
-        title: "Error",
-      });
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg(null);
-    setRegistroResult(null);
-
-    try {
-      const deviceName = biometricService.getDeviceName();
-      const response = await checadorApi.verificarRfc(cleanRfc, deviceName);
-      if (response.success && response.data && response.data.existe) {
-        login(response.data);
-        // setAlertState({
-        //   show: true,
-        //   message: response.message || "Empleado localizado.",
-        //   title: "Éxito",
-        // });
-
-        locationService
-          .obtenerUbicacionActual()
-          .then((loc) => setUserLocation(loc))
-          .catch(() => {});
-      } else {
-        setErrorMsg(response.message || "RFC no encontrado en el sistema.");
-      }
-    } catch (err: any) {
-      setErrorMsg(
-        formatError(err, "Error al conectar con la API de Reloj Nomina."),
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEnrolarBiometria = async () => {
-    if (!resultado || !resultado.rfc) return;
-
-    setEnrolling(true);
-
-    try {
-      const biometricData = await biometricService.enrolarBiometriaNativa(
-        resultado.rfc,
-        resultado.nombre || "",
-      );
-
-      const response = await checadorApi.enrolar({
-        rfc: resultado.rfc,
-        credentialId: biometricData.credentialId,
-        publicKey: biometricData.publicKey,
-        dispositivo: biometricData.dispositivo,
-        userAgent: biometricData.userAgent,
-      });
-
-      if (response.success) {
-        login({ ...resultado, tieneBiometria: true });
-        setShowReenrollButton(false);
-        setAlertState({
-          show: true,
-          message: "Biometría registrada correctamente.",
-          title: "Éxito",
-        });
-      } else {
-        setAlertState({
-          show: true,
-          message: response.message || "No se pudo registrar la biometría.",
-          title: "Error",
-        });
-      }
-    } catch (err: any) {
-      const msg = formatError(err, "Error durante la captura biométrica.");
-      setAlertState({
-        show: true,
-        message: msg,
-        title: "Error",
-      });
-    } finally {
-      setEnrolling(false);
-    }
-  };
-
-  const handleMarcarAsistencia = async () => {
-    if (!resultado || !resultado.rfc) return;
-
-    setMarking(true);
-    setRegistroResult(null);
-
-    try {
-      let location;
-      if (resultado.trabajoRemoto === "S") {
-        setToastState({
-          show: true,
-          message: "Paso 1/2: Obteniendo ubicación (Home Office)...",
-          color: "primary",
-        });
-        location = await locationService.obtenerUbicacionActual();
-      } else {
-        location = await locationService.obtenerUbicacionAntiTrampa((segs) => {
-          setToastState({
-            show: true,
-            message: `Paso 1/2: Analizando integridad y señal GPS (${segs} seg)...`,
-            color: "primary",
-          });
-        });
-      }
-
-      setUserLocation(location);
-
-      setToastState({
-        show: true,
-        message: "Paso 2/2: Verificando sensor biométrico...",
-        color: "primary",
-      });
-
-      let credentialId = "BIOMETRICO_NATIVO";
-      let dispositivo = "Dispositivo Móvil";
-
-      let canceladoPorSalto = false;
-      let watchId: number | null = null;
-      if (navigator.geolocation && resultado.trabajoRemoto !== "S") {
-        watchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            const dist = getDistanceFromLatLonInMeters(
-              location.latitud,
-              location.longitud,
-              pos.coords.latitude,
-              pos.coords.longitude,
-            );
-            if (dist > 40) {
-              canceladoPorSalto = true;
-            }
-          },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 0 },
-        );
-      }
-
-      if (biometricAvailable) {
-        const authData = await biometricService.autenticarBiometriaNativa(
-          resultado.rfc,
-        );
-        credentialId = authData.credentialId;
-        dispositivo = authData.dispositivo;
-      }
-
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-
-      if (canceladoPorSalto) {
-        throw new Error(
-          "Se detectó un cambio brusco de ubicación durante el escaneo biométrico (Posible Fake GPS rebotando). Intenta de nuevo.",
-        );
-      }
-
-      if (!navigator.onLine) {
-        await offlineSyncService.guardarChecadaLocal({
-          rfc: resultado.rfc,
-          credentialId,
-          latitud: location.latitud,
-          longitud: location.longitud,
-          dispositivo,
-          tipoMovimiento: siguienteMovimiento,
-        });
-
-        setRegistroResult({
-          dentroDeRango: true,
-          distanciaMetros: 0,
-          fechaHora: new Date().toISOString(),
-          mensaje: "Guardado localmente. Se sincronizará al conectarse a red.",
-          nombre: resultado.nombre || resultado.rfc || "",
-          rfc: resultado.rfc,
-          empresa: resultado.razonSocial || "Tu Empresa",
-        });
-        setHasPendingOffline(true);
-        login({
-          ...resultado,
-          ultimoMovimientoHoy: siguienteMovimiento,
-        });
-        setAlertState({
-          show: true,
-          message: `Asistencia (${siguienteMovimiento}) guardada localmente (Modo Offline).`,
-          title: "Éxito",
-        });
-        setMarking(false);
-        return;
-      }
-
-      const response = await checadorApi.marcar({
-        rfc: resultado.rfc,
-        credentialId,
-        latitud: location.latitud,
-        longitud: location.longitud,
-        dispositivo,
-        tipoMovimiento: siguienteMovimiento,
-      });
-
-      if (response.data) {
-        setRegistroResult(response.data);
-        login({
-          ...resultado,
-          ultimoMovimientoHoy: siguienteMovimiento,
-        });
-        setAlertState({
-          show: true,
-          message:
-            response.message ||
-            `¡Asistencia (${siguienteMovimiento}) registrada exitosamente!`,
-          title: response.data.dentroDeRango ? "Éxito" : "Fuera de Rango",
-        });
-      } else {
-        setAlertState({
-          show: true,
-          message:
-            response.message ||
-            "No se pudo registrar el marcaje de asistencia.",
-          title: "Error",
-        });
-      }
-    } catch (err: any) {
-      const msg = formatError(err, "Error al registrar la asistencia.");
-      const errorString = (
-        String(err?.message || "") +
-        " " +
-        String(err?.name || "") +
-        " " +
-        String(err)
-      ).toLowerCase();
-      if (
-        errorString.includes("notallowederror") ||
-        errorString.includes("timed out or was not allowed") ||
-        errorString.includes("cancel")
-      ) {
-        setShowReenrollButton(true);
-        setAlertState({
-          show: true,
-          message: "Autenticación biométrica cancelada. Intenta nuevamente.",
-          title: "Error",
-        });
-      } else if (
-        errorString.includes("no credential") ||
-        errorString.includes("authenticator")
-      ) {
-        login({ ...resultado, tieneBiometria: false });
-        setAlertState({
-          show: true,
-          message:
-            "Credencial biométrica no encontrada. Vuelve a registrar tu huella/rostro.",
-          title: "Error",
-        });
-      } else {
-        setAlertState({
-          show: true,
-          message: msg,
-          title: "Error",
-        });
-      }
-    } finally {
-      setMarking(false);
-    }
-  };
-
-  const limpiarBusqueda = () => {
-    setRfc("");
-    logout();
-    setRegistroResult(null);
-    setErrorMsg(null);
-    setUserLocation(null);
-    setShowReenrollButton(false);
-  };
+  const currentTime = useReloj();
 
   return (
     <IonPage className="bg-slate-100">
@@ -527,7 +119,7 @@ export const Home: React.FC = () => {
           </IonButtons>
 
           <IonTitle className="font-black tracking-tight text-left text-slate-900 pl-15">
-            Reloj Nomina
+            Reloj Nomina Test
           </IonTitle>
           {resultado && (
             <IonButtons slot="end" className="pr-2">
@@ -610,65 +202,17 @@ export const Home: React.FC = () => {
 
               <IonCard className="m-0 rounded-3xl border border-slate-200 shadow-md bg-white overflow-hidden">
                 {!resultado && (
-                  <IonCardHeader className="bg-slate-50/80 border-b border-slate-200 p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <IonCardTitle className="text-lg font-black text-slate-900">
-                          Búsqueda y Verificación
-                        </IonCardTitle>
-                        <IonCardSubtitle className="text-xs text-slate-500 font-medium mt-0.5">
-                          Introduce el RFC del empleado para consultar datos de
-                          sucursal
-                        </IonCardSubtitle>
-                      </div>
-                    </div>
-                  </IonCardHeader>
+                  <FormularioBusquedaEmpleado
+                    rfc={rfc}
+                    setRfc={setRfc}
+                    loading={loading}
+                    handleVerificarRfc={handleVerificarRfc}
+                  />
                 )}
 
                 <IonCardContent
                   className={resultado ? "p-0 bg-white" : "p-5 bg-white"}
                 >
-                  {!resultado && (
-                    <form onSubmit={handleVerificarRfc} className="space-y-4">
-                      <div className="flex flex-col sm:flex-row gap-3 items-stretch pt-3">
-                        <IonItem className="rounded-2xl border border-slate-300 flex-1 bg-white ion-no-padding px-3 shadow-inner">
-                          <IonIcon
-                            icon={personOutline}
-                            slot="start"
-                            className="text-slate-400 text-xl mr-2 pl-3"
-                          />
-                          <IonInput
-                            value={rfc}
-                            onIonInput={(e) => setRfc(e.detail.value!)}
-                            placeholder="RFC DEL EMPLEADO"
-                            maxlength={13}
-                            className="font-mono uppercase font-black text-slate-900"
-                          />
-                        </IonItem>
-
-                        <IonButton
-                          type="submit"
-                          disabled={loading || enrolling || marking}
-                          className="h-14 font-extrabold text-base shadow-lg shadow-blue-500/25 rounded-2xl"
-                          color="primary"
-                        >
-                          {loading ? (
-                            <IonSpinner name="crescent" />
-                          ) : (
-                            <>
-                              <IonIcon
-                                slot="start"
-                                icon={searchOutline}
-                                className="pr-2"
-                              />
-                              Verificar RFC
-                            </>
-                          )}
-                        </IonButton>
-                      </div>
-                    </form>
-                  )}
-
                   <IonAlert
                     isOpen={!!errorMsg && !resultado}
                     onDidDismiss={() => setErrorMsg(null)}
@@ -678,307 +222,32 @@ export const Home: React.FC = () => {
                   />
 
                   {resultado && (
-                    <div className="border-t-0 border border-slate-200 overflow-hidden bg-slate-50/50 space-y-4">
-                      <div className="p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center space-x-3">
-                          <IonAvatar className="w-12 h-12 border-2 border-white/20 shadow-md">
-                            <div className="w-full h-full bg-blue-600 flex items-center justify-center font-black text-lg text-white">
-                              {(resultado.nombre || resultado.rfc || "NA")
-                                .substring(0, 2)
-                                .toUpperCase()}
-                            </div>
-                          </IonAvatar>
-
-                          <div>
-                            <h3 className="font-black text-base text-black leading-tight">
-                              {resultado.nombre || "Empleado Registrado"}
-                            </h3>
-                            <div className="font-mono text-xs text-black font-bold mt-0.5">
-                              RFC: {resultado.rfc}
-                            </div>
-                          </div>
-                        </div>
-
-                        <IonBadge
-                          color={
-                            resultado.tieneBiometria ? "success" : "warning"
-                          }
-                          className="px-3.5 py-2 text-xs font-bold rounded-xl self-start sm:self-auto flex items-center"
-                        >
-                          <IonIcon
-                            icon={
-                              resultado.tieneBiometria
-                                ? shieldCheckmarkOutline
-                                : alertCircleOutline
-                            }
-                            className="mr-1.5 text-base"
-                          />
-                          {resultado.tieneBiometria
-                            ? "Biometría Enrolada"
-                            : "Biometría Pendiente"}
-                        </IonBadge>
-                      </div>
-
-                      <div className="px-5 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2 text-slate-900 font-black text-sm">
-                            <IonIcon
-                              icon={mapOutline}
-                              className="text-xl text-blue-600"
-                            />
-                            <span>Sucursal y Ubicación</span>
-                          </div>
-
-                          <IonButton
-                            fill="clear"
-                            size="small"
-                            disabled={fetchingGps}
-                            onClick={handleObtenerGpsMapa}
-                            className="font-bold text-xs"
-                          >
-                            {fetchingGps ? (
-                              <IonSpinner name="crescent" />
-                            ) : (
-                              <>
-                                <IonIcon slot="start" icon={locateOutline} />
-                                Actualizar GPS
-                              </>
-                            )}
-                          </IonButton>
-                        </div>
-
-                        <GeofenceMap
-                          empresaLat={resultado.latitudEmpresa || 0}
-                          empresaLng={resultado.longitudEmpresa || 0}
-                          radioMetros={resultado.radioToleranciaMetros || 150}
-                          userLat={userLocation?.latitud ?? null}
-                          userLng={userLocation?.longitud ?? null}
-                          razonSocial={
-                            resultado.razonSocial ||
-                            `Sucursal #${resultado.numeroCompania}`
-                          }
-                          nombreEmpleado={
-                            resultado.nombre || resultado.rfc || ""
-                          }
-                        />
-                      </div>
-
-                      <div className="px-5">
-                        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2 w-full">
-                          <div className="flex items-center text-xs font-black uppercase text-slate-400 tracking-wider">
-                            <IonIcon
-                              icon={businessOutline}
-                              className="mr-1.5 text-blue-600 text-base"
-                            />
-                            Sucursal Asignada
-                          </div>
-                          <div className="text-base font-black text-slate-900">
-                            {resultado.razonSocial ||
-                              `Compañía #${resultado.numeroCompania}`}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="px-5"></div>
-
-                      <div className="px-5 pb-5 space-y-4 pt-2">
-                        {resultado.tieneBiometria ? (
-                          <div className="space-y-4 bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                              <div className="flex items-center space-x-2 text-slate-900 font-black text-sm">
-                                <IonIcon
-                                  icon={checkmarkCircleOutline}
-                                  className="text-2xl text-emerald-600"
-                                />
-                                <span>Estás por registrar tu:</span>
-                              </div>
-
-                              <div className="px-4 py-2 bg-slate-100 rounded-xl flex items-center justify-center font-black text-sm text-slate-700 tracking-widest uppercase">
-                                <IonIcon
-                                  icon={
-                                    siguienteMovimiento === "ENTRADA"
-                                      ? logInOutline
-                                      : logOutOutline
-                                  }
-                                  className="mr-2 text-lg text-blue-600"
-                                />
-                                {formatMovementLabel(siguienteMovimiento)}
-                              </div>
-                            </div>
-
-                            {!isValido && motivoBloqueo && (
-                              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-2">
-                                <IonIcon
-                                  icon={alertCircleOutline}
-                                  className="text-red-500 text-xl mt-0.5"
-                                />
-                                <div className="text-sm font-bold text-red-800">
-                                  Bloqueado:{" "}
-                                  <span className="font-medium text-red-600">
-                                    {motivoBloqueo}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            {isValido && mensajeAdvertencia && (
-                              <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start space-x-2">
-                                <IonIcon
-                                  icon={alertCircleOutline}
-                                  className="text-amber-500 text-xl mt-0.5"
-                                />
-                                <div className="text-sm font-bold text-amber-800">
-                                  Advertencia:{" "}
-                                  <span className="font-medium text-amber-600">
-                                    {mensajeAdvertencia}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            <IonButton
-                              expand="block"
-                              color={
-                                hasPendingOffline
-                                  ? "medium"
-                                  : isValido
-                                    ? "success"
-                                    : "light"
-                              }
-                              disabled={
-                                marking || hasPendingOffline || !isValido
-                              }
-                              onClick={handleMarcarAsistencia}
-                              className="font-black text-base shadow-lg shadow-emerald-500/25 h-14 rounded-2xl"
-                            >
-                              {marking ? (
-                                <IonSpinner name="crescent" />
-                              ) : hasPendingOffline ? (
-                                <>
-                                  <IonIcon
-                                    slot="start"
-                                    icon={cloudOfflineOutline}
-                                    className="text-xl pr-2"
-                                  />
-                                  Sincronización Pendiente
-                                </>
-                              ) : (
-                                <>
-                                  <IonIcon
-                                    slot="start"
-                                    icon={fingerPrintOutline}
-                                    className="text-xl pr-2"
-                                  />
-                                  Marcar{" "}
-                                  {formatMovementLabel(siguienteMovimiento)}
-                                  <IonIcon
-                                    slot="end"
-                                    icon={arrowForwardOutline}
-                                  />
-                                </>
-                              )}
-                            </IonButton>
-
-                            {showReenrollButton && (
-                              <button
-                                type="button"
-                                onClick={handleEnrolarBiometria}
-                                disabled={enrolling || marking}
-                                className="w-full text-center text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors py-2 bg-transparent border-none cursor-pointer underline"
-                              >
-                                {enrolling
-                                  ? "Registrando..."
-                                  : "¿Problemas con tu huella? Vuelve a registrarla"}
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <IonButton
-                            expand="block"
-                            color="warning"
-                            disabled={enrolling}
-                            onClick={handleEnrolarBiometria}
-                            className="font-black text-sm shadow-md shadow-amber-500/20 h-14 rounded-2xl"
-                          >
-                            {enrolling ? (
-                              <IonSpinner name="crescent" />
-                            ) : (
-                              <>
-                                <IonIcon
-                                  slot="start"
-                                  icon={fingerPrintOutline}
-                                />
-                                Capturar Huella / Face ID Nativo
-                                <IonIcon
-                                  slot="end"
-                                  icon={arrowForwardOutline}
-                                />
-                              </>
-                            )}
-                          </IonButton>
-                        )}
-
-                        {registroResult && (
-                          <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/50 border border-blue-100 shadow-sm space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-3">
-                              <div className="flex items-start sm:items-center space-x-3">
-                                <IonIcon
-                                  icon={navigateOutline}
-                                  className="text-2xl text-blue-500 mt-1 sm:mt-0"
-                                />
-                                <div className="flex-1">
-                                  <div className="text-[10px] sm:text-xs uppercase font-extrabold text-slate-500 tracking-wider">
-                                    Marcaje Registrado
-                                  </div>
-                                  <div className="text-sm sm:text-base font-black text-slate-900 leading-tight mt-0.5">
-                                    {registroResult.nombre || resultado.nombre}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <IonBadge
-                                color={
-                                  registroResult.dentroDeRango
-                                    ? "success"
-                                    : "danger"
-                                }
-                                className="px-3 py-1.5 text-[10px] sm:text-xs font-black rounded-lg self-start sm:self-auto"
-                              >
-                                {registroResult.dentroDeRango
-                                  ? "Dentro de Sucursal"
-                                  : "Fuera de Rango"}
-                              </IonBadge>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                              <div>
-                                <span className="text-slate-500 font-bold block mb-0.5">
-                                  Distancia Calculada:
-                                </span>
-                                <span className="text-sm font-mono font-black text-blue-600">
-                                  {registroResult.distanciaMetros != null
-                                    ? `${registroResult.distanciaMetros.toFixed(1)} Metros`
-                                    : "N/D"}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-slate-500 font-bold block mb-0.5">
-                                  Empresa / Sucursal:
-                                </span>
-                                <span className="text-sm font-bold text-slate-900 leading-tight block">
-                                  {registroResult.empresa ||
-                                    resultado.razonSocial}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="text-[11px] sm:text-xs text-slate-600 font-medium pt-3 border-t border-slate-200">
-                              {registroResult.mensaje}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <>
+                      <InfoEmpleado
+                        resultado={resultado}
+                        userLocation={userLocation}
+                        fetchingGps={fetchingGps}
+                        handleObtenerGpsMapa={handleObtenerGpsMapa}
+                      />
+                      <PanelMarcaje
+                        resultado={resultado}
+                        enrolling={enrolling}
+                        marking={marking}
+                        siguienteMovimiento={siguienteMovimiento}
+                        formatMovementLabel={formatMovementLabel}
+                        isValido={isValido}
+                        motivoBloqueo={motivoBloqueo}
+                        mensajeAdvertencia={mensajeAdvertencia}
+                        handleMarcarAsistencia={handleMarcarAsistencia}
+                        handleEnrolarBiometria={handleEnrolarBiometria}
+                        handleSolicitarReinicio={handleSolicitarReinicio}
+                        registroResult={registroResult}
+                        showReenrollButton={showReenrollButton}
+                        hasPendingOffline={hasPendingOffline}
+                        hasPendingSolicitud={hasPendingSolicitud}
+                        toleranciaDeadline={toleranciaDeadline}
+                      />
+                    </>
                   )}
                 </IonCardContent>
               </IonCard>
@@ -1002,6 +271,56 @@ export const Home: React.FC = () => {
           color={toastState.color}
           position="top"
         />
+
+        <IonModal
+          isOpen={showSolicitudModal}
+          onDidDismiss={() => setShowSolicitudModal(false)}
+          initialBreakpoint={0.75}
+          breakpoints={[0, 0.75, 1]}
+          className="bottom-modal"
+        >
+          <div className="p-6 bg-white h-full flex flex-col pt-10">
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+            <IonIcon icon={shieldCheckmarkOutline} className="text-4xl text-blue-600 mb-3 mx-auto" />
+            <h2 className="text-xl font-black text-slate-900 text-center mb-2">Reinicio de Biometría</h2>
+            <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
+              Si cambiaste de celular o tienes problemas con el sensor, ingresa el motivo para que un administrador autorice el registro de tu nuevo dispositivo.
+            </p>
+            
+            <div className="flex-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
+                Motivo de la Solicitud
+              </label>
+              <textarea
+                value={motivoSolicitud}
+                onChange={(e) => setMotivoSolicitud(e.target.value)}
+                placeholder="Ej. Me robaron el celular y compré uno nuevo."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all resize-none h-32"
+              ></textarea>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <IonButton
+                expand="block"
+                className="h-12 m-0 font-bold text-sm shadow-sm rounded-xl"
+                onClick={enviarSolicitudReinicio}
+                disabled={enviandoSolicitud || !motivoSolicitud.trim()}
+              >
+                {enviandoSolicitud ? <IonSpinner name="dots" /> : "Enviar Solicitud"}
+              </IonButton>
+              <IonButton
+                expand="block"
+                fill="clear"
+                color="medium"
+                className="h-12 m-0 font-bold text-sm"
+                onClick={() => setShowSolicitudModal(false)}
+                disabled={enviandoSolicitud}
+              >
+                Cancelar
+              </IonButton>
+            </div>
+          </div>
+        </IonModal>
       </IonContent>
     </IonPage>
   );

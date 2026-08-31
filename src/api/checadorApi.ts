@@ -10,6 +10,7 @@ import {
   MarcarAsistenciaRequest,
   RegistroChecadaResponseDto,
   HistoricoAMNResponse,
+  SolicitudCreacionDto,
 } from "../types/api";
 
 export const checadorApi = {
@@ -36,10 +37,10 @@ export const checadorApi = {
         razonSocial: raw.razonSocial ?? raw.RazonSocial,
         latitudEmpresa: raw.latitudEmpresa ?? raw.LatitudEmpresa,
         longitudEmpresa: raw.longitudEmpresa ?? raw.LongitudEmpresa,
-        radioToleranciaMetros:
-          raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
+        radioToleranciaMetros: raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
         ultimoMovimientoHoy: raw.ultimoMovimientoHoy ?? raw.UltimoMovimientoHoy,
         trabajoRemoto: raw.trabajoRemoto ?? raw.TrabajoRemoto,
+        numeroEmpleado: raw.numeroEmpleado ?? raw.NumeroEmpleado,
         horario: raw.horario ?? raw.Horario,
       };
 
@@ -102,10 +103,14 @@ export const checadorApi = {
       {
         rfc,
         numeroCompania,
-      }
+      },
     );
-    
-    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+
+    if (
+      response.data &&
+      response.data.data &&
+      Array.isArray(response.data.data)
+    ) {
       response.data.data = response.data.data.map((raw: any) => ({
         ...raw,
         numero: raw.numero ?? raw.Numero,
@@ -115,10 +120,20 @@ export const checadorApi = {
         latitud: raw.latitud ?? raw.Latitud,
         longitud: raw.longitud ?? raw.Longitud,
         dispositivoNombre: raw.dispositivoNombre ?? raw.DispositivoNombre,
-        tipoMovimiento: raw.tipoMovimiento ?? raw.TipoMovimiento
+        tipoMovimiento: raw.tipoMovimiento ?? raw.TipoMovimiento,
       }));
     }
 
     return response.data as ApiResponse<HistoricoAMNResponse[]>;
+  },
+
+  enviarSolicitud: async (
+    payload: SolicitudCreacionDto,
+  ): Promise<ApiResponse<boolean>> => {
+    const response = await apiClient.post<ApiResponse<boolean>>(
+      API_ENDPOINTS.CHECADOR.SOLICITUD,
+      payload,
+    );
+    return response.data;
   },
 };

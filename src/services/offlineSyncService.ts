@@ -1,74 +1,72 @@
+import localforage from "localforage";
 import { MarcarAsistenciaRequest } from "../types/api";
 
-const DB_NAME = "RelojNominaDB";
-const DB_VERSION = 1;
-const STORE_NAME = "pending_punches";
+const PENDING_PUNCHES_KEY = "pending_punches";
 
 export interface PendingPunch extends MarcarAsistenciaRequest {
-  id?: number;
+  id: number;
   timestamp: number;
 }
 
-const openDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => reject(request.error);
-
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, {
-          keyPath: "id",
-          autoIncrement: true,
-        });
-      }
-    };
-  });
-};
+// Configurar instancia específica para la aplicación
+const offlineStore = localforage.createInstance({
+  name: "BioChecadorPWA",
+  storeName: "offline_sync"
+});
 
 export const offlineSyncService = {
-  guardarChecadaLocal: async (
-    punch: MarcarAsistenciaRequest,
-  ): Promise<void> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
-      const pendingPunch: PendingPunch = {
+  guardarChecadaLocal: async (punch: MarcarAsistenciaRequest): Promise<void> => {
+    try {
+      const existing = await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
+      const newPunch: PendingPunch = {
         ...punch,
+        id: Date.now() + Math.random(),
         timestamp: Date.now(),
       };
-
-      const request = store.add(pendingPunch);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+      
+      existing.push(newPunch);
+      await offlineStore.setItem(PENDING_PUNCHES_KEY, existing);
+    } catch (error) {
+      console.error("Error al guardar checada offline:", error);
+      throw error;
+    }
   },
 
   obtenerChecadasPendientes: async (): Promise<PendingPunch[]> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readonly");
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.getAll();
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      return await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
+    } catch (error) {
+      console.error("Error al obtener checadas offline:", error);
+      return [];
+    }
   },
 
   eliminarChecada: async (id: number): Promise<void> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.delete(id);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      const existing = await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
+      const filtered = existing.filter(punch => punch.id !== id);
+      await offlineStore.setItem(PENDING_PUNCHES_KEY, filtered);
+    } catch (error) {
+      console.error("Error al eliminar checada offline:", error);
+      throw error;
+    }
   },
+
+  // Funciones nuevas para guardar configuración (como el RFC autoguardado)
+  guardarConfiguracion: async (key: string, value: any): Promise<void> => {
+    try {
+      await offlineStore.setItem(key, value);
+    } catch (error) {
+      console.error(`Error guardando configuracion ${key}:`, error);
+    }
+  },
+
+  obtenerConfiguracion: async <T>(key: string): Promise<T | null> => {
+    try {
+      return await offlineStore.getItem<T>(key);
+    } catch (error) {
+      console.error(`Error obteniendo configuracion ${key}:`, error);
+      return null;
+    }
+  }
 };

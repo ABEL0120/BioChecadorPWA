@@ -10,7 +10,7 @@ export function getDistanceFromLatLonInMeters(
   lat2: number,
   lon2: number,
 ) {
-  const R = 6371e3; // Radio de la Tierra en metros
+  const R = 6371e3;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
@@ -20,13 +20,13 @@ export function getDistanceFromLatLonInMeters(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Distancia en metros
+  const d = R * c;
   return d;
 }
 
 export const locationService = {
   obtenerUbicacionAntiTrampa: (
-    onProgress?: (segs: number) => void
+    onProgress?: (segs: number) => void,
   ): Promise<GpsLocationResult> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -41,13 +41,13 @@ export const locationService = {
       const points: Array<GpsLocationResult & { timestamp: number }> = [];
       let rejected = false;
       let segsLeft = 10;
-      
+
       if (onProgress) onProgress(segsLeft);
 
       const intervalId = window.setInterval(() => {
         segsLeft--;
         if (onProgress && segsLeft >= 0) onProgress(segsLeft);
-        
+
         navigator.geolocation.getCurrentPosition(
           (position) => {
             if (rejected) return;
@@ -58,8 +58,23 @@ export const locationService = {
               timestamp: Date.now(),
             });
           },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 },
+          (err) => {
+            // Fallback para PC (Windows) donde High Accuracy suele fallar por falta de hardware GPS
+            navigator.geolocation.getCurrentPosition(
+              (posFallback) => {
+                if (rejected) return;
+                points.push({
+                  latitud: posFallback.coords.latitude,
+                  longitud: posFallback.coords.longitude,
+                  accuracy: posFallback.coords.accuracy,
+                  timestamp: Date.now(),
+                });
+              },
+              () => {},
+              { enableHighAccuracy: false, maximumAge: 0, timeout: 3000 }
+            );
+          },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 },
         );
       }, 1000);
 
@@ -82,7 +97,10 @@ export const locationService = {
             const p1 = points[i - 1];
             const p2 = points[i];
             const distMeters = getDistanceFromLatLonInMeters(
-              p1.latitud, p1.longitud, p2.latitud, p2.longitud,
+              p1.latitud,
+              p1.longitud,
+              p2.latitud,
+              p2.longitud,
             );
             const timeDiffSecs = (p2.timestamp - p1.timestamp) / 1000;
             // Solo analizamos la velocidad si hubo un movimiento mayor a 20 metros (para ignorar ruido pequeño)
@@ -90,10 +108,14 @@ export const locationService = {
               const speedMetersPerSec = distMeters / timeDiffSecs;
               const speedKmh = speedMetersPerSec * 3.6;
               // OJO: VELOCIDAD MAXIMA. Súbele el número si está saltando mucho en tu empresa real.
-              const MAX_SPEED_KMH = 100; 
+              const MAX_SPEED_KMH = 100;
               if (speedKmh > MAX_SPEED_KMH) {
                 rejected = true;
-                reject(new Error("Se detectó una anomalía en el GPS. Por favor desactiva cualquier Fake GPS."));
+                reject(
+                  new Error(
+                    "Se detectó una anomalía en el GPS. Por favor desactiva cualquier Fake GPS.",
+                  ),
+                );
                 return;
               }
             }
@@ -104,24 +126,54 @@ export const locationService = {
             let totalPath = 0;
             for (let i = 1; i < points.length; i++) {
               totalPath += getDistanceFromLatLonInMeters(
-                points[i - 1].latitud, points[i - 1].longitud,
-                points[i].latitud, points[i].longitud
+                points[i - 1].latitud,
+                points[i - 1].longitud,
+                points[i].latitud,
+                points[i].longitud,
               );
             }
             const netDistance = getDistanceFromLatLonInMeters(
-              points[0].latitud, points[0].longitud,
-              points[points.length - 1].latitud, points[points.length - 1].longitud
+              points[0].latitud,
+              points[0].longitud,
+              points[points.length - 1].latitud,
+              points[points.length - 1].longitud,
             );
             // Súbele el totalPath a 100 y bájale la netDistance si está muy estricto.
             const MIN_PATH_METERS = 100;
             const MAX_NET_METERS = 15;
             if (totalPath > MIN_PATH_METERS && netDistance < MAX_NET_METERS) {
               rejected = true;
-              reject(new Error("Se detectó inestabilidad GPS. Por favor desactiva cualquier Fake GPS."));
+              reject(
+                new Error(
+                  "Se detectó inestabilidad GPS. Por favor desactiva cualquier Fake GPS.",
+                ),
+              );
               return;
             }
           }
-          
+
+          // if (points.length >= 3) {
+          //   // 0.5 para que un GPS real que esté muy quieto no dé falso positivo.
+          //   const RADIO_ESTATICO_METROS = 0.00001;
+          //   const casiInmovil = points.every(
+          //     (p) =>
+          //       getDistanceFromLatLonInMeters(
+          //         p.latitud,
+          //         p.longitud,
+          //         points[0].latitud,
+          //         points[0].longitud,
+          //       ) < RADIO_ESTATICO_METROS,
+          //   );
+          //   if (casiInmovil) {
+          //     rejected = true;
+          //     reject(
+          //       new Error(
+          //         "Se detectó una señal GPS anormalmente estática. Por favor desactiva el fake gps.",
+          //       ),
+          //     );
+          //     return;
+          //   }
+          // }
         }
         const lastPoint = points[points.length - 1];
         resolve({
@@ -235,7 +287,7 @@ export const locationService = {
             accuracy: position.coords.accuracy,
             timestamp: now,
           });
-          
+
           if (points.length > 5) points.shift();
 
           if (points.length > 1) {
@@ -254,7 +306,7 @@ export const locationService = {
             if (timeDiffSecs > 0 && distMeters > 20) {
               const speedMetersPerSec = distMeters / timeDiffSecs;
               const speedKmh = speedMetersPerSec * 3.6;
-              
+
               // 100 km/h es imposible para una persona. Si salta así de rápido, es Fake GPS seguro.
               if (speedKmh > 100) {
                 onAnomalyDetected(

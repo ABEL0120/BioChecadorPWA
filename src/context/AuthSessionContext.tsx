@@ -14,7 +14,7 @@ export interface AuthSessionContextType {
   user: EstadoEmpleadoDto | null;
   login: (user: EstadoEmpleadoDto) => void;
   logout: () => void;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<{ success: boolean; message: string; }>;
   isLoadingSession: boolean;
 }
 
@@ -119,25 +119,39 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
     localStorage.removeItem(SESSION_KEY);
   };
 
-  const refresh = async () => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refresh = async (): Promise<{ success: boolean; message: string }> => {
+    if (isRefreshing) return { success: false, message: "Actualización en progreso..." };
+
     const stored = localStorage.getItem(SESSION_KEY);
     const currentUser = stored
       ? (JSON.parse(stored) as EstadoEmpleadoDto)
       : null;
 
-    if (!currentUser?.rfc || !navigator.onLine) return;
+    if (!currentUser?.rfc || !navigator.onLine) {
+      return { success: false, message: "No se puede actualizar sin conexión o sin sesión." };
+    }
+    
+    setIsRefreshing(true);
     try {
       const deviceName = biometricService.getDeviceName();
       const res = await checadorApi.verificarRfc(currentUser.rfc, deviceName);
       if (res.success && res.data && res.data.existe) {
         setUser(res.data);
         localStorage.setItem(SESSION_KEY, JSON.stringify(res.data));
+        return { success: true, message: "Información actualizada correctamente." };
       } else if (!res.success) {
         logout();
+        return { success: false, message: res.message || "Sesión expirada." };
       }
     } catch (err) {
       console.error("Error refreshing session:", err);
+      return { success: false, message: "Error de red al actualizar." };
+    } finally {
+      setIsRefreshing(false);
     }
+    return { success: false, message: "Error desconocido." };
   };
 
   return (
