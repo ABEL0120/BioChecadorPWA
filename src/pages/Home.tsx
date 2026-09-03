@@ -260,7 +260,7 @@ export const Home: React.FC = () => {
                 value={motivoSolicitud}
                 onChange={(e) => setMotivoSolicitud(e.target.value)}
                 placeholder="Ej. Me robaron el celular y compré uno nuevo."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all resize-none h-32"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-700 outline-none transition-all resize-none h-32"
               ></textarea>
             </div>
 

@@ -155,7 +155,7 @@ const SolicitudesPage: React.FC = () => {
       <IonContent className="ion-padding" style={{ "--background": "#f8fafc" }}>
         <div className="max-w-md mx-auto pt-6 flex flex-col h-full">
           <h2 className="text-2xl font-black text-slate-900 text-center mb-3">
-            Solicitar Reinicio
+            Solicitar Reinicio Biometrico
           </h2>
 
           {loadingStatus ? (
@@ -189,7 +189,7 @@ const SolicitudesPage: React.FC = () => {
                   onChange={(e) => setMotivoSolicitud(e.target.value)}
                   maxLength={150}
                   placeholder="Ej. Me robaron el celular y compré uno nuevo."
-                  className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 transition-all resize-none h-40 shadow-sm"
+                  className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-medium text-slate-700 outline-none transition-all resize-none h-40 shadow-sm"
                 ></textarea>
               </div>
 
