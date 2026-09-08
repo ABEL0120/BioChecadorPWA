@@ -13,6 +13,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "prompt",
+      filename: "sw.js",
+      manifestFilename: "manifest.json",
       includeAssets: [
         "favicon.png",
         "icon-192.svg",
