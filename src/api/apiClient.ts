@@ -1,7 +1,7 @@
 import axios from "axios";
 import { timeService } from "../services/timeService";
 
-const baseURL = import.meta.env.VITE_API_URL || "/api";
+const baseURL = import.meta.env.VITE_API_URL;
 
 export const apiClient = axios.create({
   baseURL,
