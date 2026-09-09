@@ -7,7 +7,12 @@ export interface ValidacionMarcajeResult {
   isValido: boolean;
   motivoBloqueo: string | null;
   mensajeAdvertencia: string | null;
-  siguienteMovimiento: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA";
+  siguienteMovimiento:
+    | "ENTRADA"
+    | "SALIDA"
+    | "RETARDO"
+    | "SALIDA_COMIDA"
+    | "ENTRADA_COMIDA";
   distanciaMetros: number | null;
   toleranciaDeadline: Date | null;
 }
@@ -79,10 +84,13 @@ export const useValidacionMarcaje = (
           empleado.longitudEmpresa != null &&
           empleado.radioToleranciaMetros != null
         ) {
-          if (empleado.trabajoRemoto === "S") {
+          // TEMPORAL: Forzamos a todos a Home Office para ignorar la geocerca sin importar su caché
+          const esRemoto = true; // empleado.trabajoRemoto === "S";
+
+          if (esRemoto) {
             isDentroDeRango = true;
             motivoBloqueoLocal = null;
-            mensajeAdvertenciaLocal = "Home Office detectado: ubicación guardada.";
+            //TEMPORAL: mensajeAdvertenciaLocal = "Home Office detectado: ubicación guardada.";
           } else {
             const d = calcularDistanciaHaversine(
               userLocation.latitud,
@@ -111,7 +119,9 @@ export const useValidacionMarcaje = (
             isValido: false,
             motivoBloqueo: motivoBloqueoLocal,
             mensajeAdvertencia: mensajeAdvertenciaLocal,
-            siguienteMovimiento: (empleado.ultimoMovimientoHoy === "ENTRADA" || empleado.ultimoMovimientoHoy === "RETARDO" || empleado.ultimoMovimientoHoy === "ENTRADA_COMIDA"
+            siguienteMovimiento: (empleado.ultimoMovimientoHoy === "ENTRADA" ||
+            empleado.ultimoMovimientoHoy === "RETARDO" ||
+            empleado.ultimoMovimientoHoy === "ENTRADA_COMIDA"
               ? "SALIDA"
               : "ENTRADA") as any,
             distanciaMetros: distancia !== null ? Math.round(distancia) : null,
@@ -135,8 +145,17 @@ export const useValidacionMarcaje = (
         }
 
         if (!horarioArray || horarioArray.length === 0) {
-          let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA" =
-            (empleado.ultimoMovimientoHoy === "ENTRADA" || empleado.ultimoMovimientoHoy === "RETARDO" || empleado.ultimoMovimientoHoy === "ENTRADA_COMIDA") ? "SALIDA" : "ENTRADA";
+          let nextMovement:
+            | "ENTRADA"
+            | "SALIDA"
+            | "RETARDO"
+            | "SALIDA_COMIDA"
+            | "ENTRADA_COMIDA" =
+            empleado.ultimoMovimientoHoy === "ENTRADA" ||
+            empleado.ultimoMovimientoHoy === "RETARDO" ||
+            empleado.ultimoMovimientoHoy === "ENTRADA_COMIDA"
+              ? "SALIDA"
+              : "ENTRADA";
           setResult({
             isValido: true,
             motivoBloqueo: null,
@@ -191,7 +210,12 @@ export const useValidacionMarcaje = (
         }
 
         const now = timeService.now();
-        let nextMovement: "ENTRADA" | "SALIDA" | "RETARDO" | "SALIDA_COMIDA" | "ENTRADA_COMIDA" = "ENTRADA";
+        let nextMovement:
+          | "ENTRADA"
+          | "SALIDA"
+          | "RETARDO"
+          | "SALIDA_COMIDA"
+          | "ENTRADA_COMIDA" = "ENTRADA";
         const ultimo = (empleado.ultimoMovimientoHoy || "").toUpperCase();
 
         if (!ultimo) {
@@ -201,10 +225,15 @@ export const useValidacionMarcaje = (
             const salidaComidaTime = parseTimeToDate(turnoHoy.salidaComida);
             const regresoComidaTime = parseTimeToDate(turnoHoy.regresoComida);
             const toleranciaMin = turnoHoy.toleranciaComidaMinutos || 0;
-            const limiteComidaTime = new Date(regresoComidaTime.getTime() + (toleranciaMin * 60000));
+            const limiteComidaTime = new Date(
+              regresoComidaTime.getTime() + toleranciaMin * 60000,
+            );
 
             // Permite SALIDA_COMIDA si estamos al menos a la hora de salida de comida, o un poco antes (opcional)
-            if (now.getTime() >= (salidaComidaTime.getTime() - 600000) && now.getTime() <= limiteComidaTime.getTime()) {
+            if (
+              now.getTime() >= salidaComidaTime.getTime() - 600000 &&
+              now.getTime() <= limiteComidaTime.getTime()
+            ) {
               nextMovement = "SALIDA_COMIDA";
             } else {
               nextMovement = "SALIDA";
@@ -244,8 +273,14 @@ export const useValidacionMarcaje = (
             if (diffMinutes < -30) {
               isValido = false;
               motivoBloqueo = "Muy temprano (Permitido 30 min antes)";
-            } else if (diffMinutes >= 0 && diffMinutes <= tolerancia && tolerancia > 0) {
-              currentToleranciaDeadline = new Date(entradaTime.getTime() + tolerancia * 60000);
+            } else if (
+              diffMinutes >= 0 &&
+              diffMinutes <= tolerancia &&
+              tolerancia > 0
+            ) {
+              currentToleranciaDeadline = new Date(
+                entradaTime.getTime() + tolerancia * 60000,
+              );
             } else if (diffMinutes > tolerancia) {
               const diffHours = Math.floor(diffMinutes / 60);
               const diffMinutesOnly = Math.floor(diffMinutes % 60);
@@ -254,8 +289,7 @@ export const useValidacionMarcaje = (
             }
           } else if (nextMovement === "SALIDA" && turnoHoy.salida) {
           }
-        } catch (e) {
-        }
+        } catch (e) {}
 
         setResult({
           isValido,
