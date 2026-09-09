@@ -1,28 +1,28 @@
 {
-  "short_name": "Reloj Nomina",
-  "name": "Reloj Nomina 2026",
+  "short_name": "Reloj Nómina",
+  "name": "Reloj Nómina",
   "description": "Sistema de Control de Asistencia Biométrica y GPS",
   "icons": [
     {
-      "src": "pwa-192x192.png",
+      "src": "pwa-192x192-v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "pwa-512x512.png",
+      "src": "pwa-512x512-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "pwa-192x192.png",
+      "src": "pwa-192x192-v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "pwa-512x512.png",
+      "src": "pwa-512x512-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

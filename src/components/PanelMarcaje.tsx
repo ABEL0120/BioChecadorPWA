@@ -84,151 +84,124 @@ export const PanelMarcaje: React.FC<Props> = ({
   }, [toleranciaDeadline]);
 
   return (
-    <div className="px-5 pb-5 space-y-4 pt-2">
+    <div className="space-y-5 pt-2">
       {resultado.tieneBiometria ? (
-        <div className="space-y-4 bg-white p-4 sm:p-5 rounded-2xl border border-emerald-200 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-5 relative overflow-hidden">
+          {/* Fondo decorativo sutil */}
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
             <div className="flex flex-col gap-1">
-              <div className="flex items-center space-x-2 text-slate-800 font-bold text-xs sm:text-sm">
-                <IonIcon
-                  icon={checkmarkCircleOutline}
-                  className="text-base text-emerald-600"
-                />
-                <span>Estás por registrar tu:</span>
+              <div className="flex items-center space-x-2 text-slate-800 font-black text-sm uppercase tracking-wide">
+                <IonIcon icon={checkmarkCircleOutline} className="text-xl text-emerald-500" />
+                <span>Siguiente Movimiento</span>
               </div>
               {timeLeft && (
-                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md w-fit border border-amber-200">
-                  <IonIcon icon={timeOutline} />
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-amber-600 bg-amber-50/80 backdrop-blur-sm px-2.5 py-1 rounded-md w-fit border border-amber-200">
+                  <IonIcon icon={timeOutline} className="text-sm" />
                   <span>Tolerancia restante: {timeLeft}</span>
                 </div>
               )}
             </div>
 
-            <div className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center font-black text-xs text-slate-700 tracking-wider uppercase">
+            <div className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center font-black text-xs text-slate-700 tracking-widest uppercase shadow-sm">
               <IonIcon
-                icon={
-                  siguienteMovimiento === "ENTRADA"
-                    ? logInOutline
-                    : logOutOutline
-                }
-                className="mr-1.5 text-base text-blue-600"
+                icon={siguienteMovimiento === "ENTRADA" ? logInOutline : logOutOutline}
+                className="mr-2 text-lg text-blue-600"
               />
               {formatMovementLabel(siguienteMovimiento)}
             </div>
           </div>
 
           {!isValido && motivoBloqueo && (
-            <div className="flex items-start space-x-2 bg-red-50 text-red-700 p-3 rounded-xl border border-red-200">
-              <IonIcon
-                icon={warningOutline}
-                className="text-base mt-0.5 shrink-0"
-              />
-              <span className="text-[11px] sm:text-xs font-bold leading-relaxed">
-                {motivoBloqueo}
-              </span>
+            <div className="flex items-start space-x-3 bg-red-50/80 text-red-700 p-3.5 rounded-2xl border border-red-200 backdrop-blur-sm relative z-10">
+              <IonIcon icon={warningOutline} className="text-lg mt-0.5 shrink-0 text-red-500" />
+              <span className="text-[11px] sm:text-xs font-bold leading-relaxed">{motivoBloqueo}</span>
             </div>
           )}
 
           {isValido && mensajeAdvertencia && (
-            <div className="flex items-start space-x-2 bg-amber-50 text-amber-700 p-3 rounded-xl border border-amber-200">
-              <IonIcon
-                icon={warningOutline}
-                className="text-base mt-0.5 shrink-0"
-              />
-              <span className="text-[11px] sm:text-xs font-bold leading-relaxed">
-                {mensajeAdvertencia}
-              </span>
+            <div className="flex items-start space-x-3 bg-amber-50/80 text-amber-700 p-3.5 rounded-2xl border border-amber-200 backdrop-blur-sm relative z-10">
+              <IonIcon icon={warningOutline} className="text-lg mt-0.5 shrink-0 text-amber-500" />
+              <span className="text-[11px] sm:text-xs font-bold leading-relaxed">{mensajeAdvertencia}</span>
             </div>
           )}
 
-          <IonButton
-            expand="block"
+          <button
             disabled={marking || hasPendingOffline || !isValido}
             onClick={handleMarcarAsistencia}
-            className="h-12 m-0 font-bold text-sm shadow-sm rounded-xl"
-            color={
+            className={`relative z-10 w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
               hasPendingOffline
-                ? "medium"
-                : isValido
-                ? "success"
-                : "light"
-            }
+                ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                : !isValido
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg hover:shadow-emerald-200 active:scale-[0.98]"
+            }`}
           >
             {marking ? (
-              <IonSpinner name="crescent" className="w-5 h-5" />
+              <IonSpinner name="crescent" className="w-5 h-5 text-current" />
             ) : hasPendingOffline ? (
               <>
-                <IonIcon
-                  slot="start"
-                  icon={logOutOutline}
-                  className="text-base pr-1.5"
-                />
-                Sincronización Pendiente
+                <IonIcon icon={logOutOutline} className="text-xl" />
+                <span>Sincronización Pendiente</span>
               </>
             ) : !isValido ? (
               <>
-                <IonIcon slot="start" icon={lockClosedOutline} className="text-base pr-1.5" />
-                Bloqueado
+                <IonIcon icon={lockClosedOutline} className="text-xl" />
+                <span>Bloqueado</span>
               </>
             ) : (
               <>
-                <IonIcon
-                  slot="start"
-                  icon={fingerPrintOutline}
-                  className="text-base pr-1.5"
-                />
-                Marcar {formatMovementLabel(siguienteMovimiento)}
+                <IonIcon icon={fingerPrintOutline} className="text-xl" />
+                <span>Marcar {formatMovementLabel(siguienteMovimiento)}</span>
               </>
             )}
-          </IonButton>
+          </button>
 
-          <div className="mt-5">
-          {showReenrollButton && !hasPendingSolicitud && (
-            <button
-              type="button"
-              onClick={handleSolicitarReinicio}
-              disabled={enrolling || marking}
-              className="w-full text-center text-[10px] sm:text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors py-1 bg-transparent border-none cursor-pointer underline"
-            >
-              {enrolling
-                ? "Registrando..."
-                : "Solicitar reinicio de Huella/Dispositivo"}
-            </button>
-          )}
+          <div className="relative z-10 flex justify-center mt-2">
+            {showReenrollButton && !hasPendingSolicitud && (
+              <button
+                type="button"
+                onClick={handleSolicitarReinicio}
+                disabled={enrolling || marking}
+                className="text-[10px] sm:text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors py-1 bg-transparent border-none cursor-pointer underline"
+              >
+                {enrolling ? "Procesando..." : "Solicitar reinicio de Huella/Dispositivo"}
+              </button>
+            )}
           </div>
         </div>
       ) : (
-        <IonButton
-          expand="block"
-          color="warning"
+        <button
           disabled={enrolling}
           onClick={handleEnrolarBiometria}
-          className="h-12 m-0 font-bold text-sm shadow-sm rounded-xl"
+          className="w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 shadow-md hover:shadow-lg hover:shadow-amber-200 active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {enrolling ? (
-            <IonSpinner name="crescent" className="w-5 h-5" />
+            <IonSpinner name="crescent" className="w-5 h-5 text-white" />
           ) : (
             <>
-              <IonIcon slot="start" icon={fingerPrintOutline} className="text-base pr-1.5" />
-              Capturar Huella / Face ID Nativo
+              <IonIcon icon={fingerPrintOutline} className="text-xl" />
+              <span>Capturar Huella / Face ID</span>
             </>
           )}
-        </IonButton>
+        </button>
       )}
 
       {registroResult && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/50 border border-blue-100 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-3">
-            <div className="flex items-start sm:items-center space-x-3">
-              <IonIcon
-                icon={navigateOutline}
-                className="text-2xl text-blue-500 mt-1 sm:mt-0"
-              />
+        <div className="p-5 rounded-3xl bg-blue-50/60 border border-blue-100 shadow-sm space-y-4 relative overflow-hidden backdrop-blur-sm">
+          <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-200 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-blue-200/50 pb-4 gap-3 relative z-10">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                <IonIcon icon={navigateOutline} className="text-xl text-blue-600" />
+              </div>
               <div className="flex-1">
-                <div className="text-[10px] sm:text-xs uppercase font-extrabold text-slate-500 tracking-wider">
+                <div className="text-[10px] sm:text-[11px] uppercase font-black text-blue-500 tracking-widest">
                   Marcaje Registrado
                 </div>
-                <div className="text-sm sm:text-base font-black text-slate-900 leading-tight mt-0.5">
+                <div className="text-sm sm:text-base font-black text-slate-800 leading-tight mt-0.5">
                   {registroResult.nombre || resultado.nombre}
                 </div>
               </div>
@@ -242,7 +215,7 @@ export const PanelMarcaje: React.FC<Props> = ({
                   ? "success"
                   : "danger"
               }
-              className="px-3 py-1.5 text-[10px] sm:text-xs font-black rounded-lg self-start sm:self-auto"
+              className="px-3.5 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-wider font-black rounded-xl self-start sm:self-auto shadow-sm"
             >
               {resultado.trabajoRemoto === "S"
                 ? "Modalidad Home Office"
@@ -252,30 +225,30 @@ export const PanelMarcaje: React.FC<Props> = ({
             </IonBadge>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-slate-500 font-bold block mb-0.5">
-                Distancia Calculada:
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 relative z-10">
+            <div className="bg-white/60 p-3 rounded-2xl border border-white">
+              <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold block mb-1">
+                Distancia
               </span>
               <span className="text-sm font-mono font-black text-blue-600">
                 {registroResult.distanciaMetros != null
                   ? registroResult.distanciaMetros >= 1000
-                    ? `${Math.floor(registroResult.distanciaMetros / 1000)} Km ${Math.round(registroResult.distanciaMetros % 1000)} Metros`
-                    : `${Math.round(registroResult.distanciaMetros)} Metros`
+                    ? `${Math.floor(registroResult.distanciaMetros / 1000)} Km ${Math.round(registroResult.distanciaMetros % 1000)} M`
+                    : `${Math.round(registroResult.distanciaMetros)} M`
                   : "N/D"}
               </span>
             </div>
-            <div>
-              <span className="text-slate-500 font-bold block mb-0.5">
-                Empresa / Sucursal:
+            <div className="bg-white/60 p-3 rounded-2xl border border-white">
+              <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold block mb-1">
+                Sucursal
               </span>
-              <span className="text-sm font-bold text-slate-900 leading-tight block">
+              <span className="text-xs font-bold text-slate-800 leading-tight block">
                 {registroResult.empresa || resultado.razonSocial}
               </span>
             </div>
           </div>
 
-          <div className="text-[11px] sm:text-xs text-slate-600 font-medium pt-3 border-t border-slate-200">
+          <div className="text-[11px] sm:text-xs text-blue-800 font-semibold pt-2 relative z-10">
             {registroResult.mensaje}
           </div>
         </div>

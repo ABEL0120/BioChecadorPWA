@@ -58,7 +58,10 @@ const MapResizer = () => {
 const RecenterControl: React.FC<{ lat: number; lng: number }> = ({ lat, lng }) => {
   const map = useMap();
   return (
-    <div className="leaflet-bottom leaflet-right">
+    <div 
+      className="leaflet-bottom leaflet-right transition-all duration-300"
+      style={{ bottom: window.innerWidth < 768 ? '30px' : '10px' }}
+    >
       <div className="leaflet-control" style={{ margin: '10px' }}>
         <button
           onClick={(e) => {
@@ -66,10 +69,10 @@ const RecenterControl: React.FC<{ lat: number; lng: number }> = ({ lat, lng }) =
             e.stopPropagation();
             map.setView([lat, lng], 16, { animate: true });
           }}
-          className="bg-white text-blue-600 w-10 h-10 flex items-center justify-center rounded-xl shadow-md cursor-pointer hover:bg-slate-50 border border-slate-200"
+          className="bg-white text-blue-600 w-12 h-12 flex items-center justify-center rounded-2xl shadow-lg cursor-pointer hover:bg-slate-50 border border-slate-200 active:scale-95 transition-all"
           title="Enfocar mi ubicación"
         >
-          <IonIcon icon={locateOutline} style={{ fontSize: '20px' }} />
+          <IonIcon icon={locateOutline} style={{ fontSize: '24px' }} />
         </button>
       </div>
     </div>
@@ -96,7 +99,7 @@ export const GeofenceMap: React.FC<GeofenceMapProps> = ({
   const centerLng = userLng ?? empresaLng;
 
   return (
-    <div className="w-full h-72 rounded-2xl overflow-hidden border border-slate-300 shadow-inner relative z-0">
+    <div className="w-full h-full relative z-0">
       <MapContainer
         center={[centerLat, centerLng]}
         zoom={16}

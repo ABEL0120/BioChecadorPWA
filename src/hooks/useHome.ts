@@ -284,10 +284,10 @@ export const useHome = () => {
 
     try {
       let location;
-      if (resultado.trabajoRemoto === "S") {
+      // if (resultado.trabajoRemoto === "S") {
         setToastState({
           show: true,
-          message: "Paso 1/2: Obteniendo ubicación (Home Office)...",
+          message: "Paso 1/2: Obteniendo ubicación...",
           color: "primary",
         });
         const isWindows = /Windows/.test(navigator.userAgent);
@@ -296,15 +296,15 @@ export const useHome = () => {
         } else {
           location = await locationService.obtenerUbicacionActual();
         }
-      } else {
-        location = await locationService.obtenerUbicacionAntiTrampa((segs) => {
-          setToastState({
-            show: true,
-            message: `Paso 1/2: Analizando integridad y señal GPS (${segs} seg)...`,
-            color: "primary",
-          });
-        });
-      }
+      // } else {
+      //   location = await locationService.obtenerUbicacionAntiTrampa((segs) => {
+      //     setToastState({
+      //       show: true,
+      //       message: `Paso 1/2: Analizando integridad y señal GPS (${segs} seg)...`,
+      //       color: "primary",
+      //     });
+      //   });
+      // }
 
       setUserLocation(location);
 
@@ -317,6 +317,7 @@ export const useHome = () => {
       let credentialId = "BIOMETRICO_NATIVO";
       let dispositivo = "Dispositivo Móvil";
 
+      /*
       let canceladoPorSalto = false;
       let watchId: number | null = null;
       const isWindows = /Windows/.test(navigator.userAgent);
@@ -338,6 +339,7 @@ export const useHome = () => {
           { enableHighAccuracy: true, maximumAge: 0 }
         );
       }
+      */
 
       if (biometricAvailable) {
         const authData = await biometricService.autenticarBiometriaNativa(
@@ -347,6 +349,7 @@ export const useHome = () => {
         dispositivo = authData.dispositivo;
       }
 
+      /*
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
       }
@@ -356,6 +359,7 @@ export const useHome = () => {
           "Se detectó un cambio brusco de ubicación durante el escaneo biométrico (Posible Fake GPS rebotando). Intenta de nuevo."
         );
       }
+      */
 
       if (!navigator.onLine) {
         await offlineSyncService.guardarChecadaLocal({

@@ -93,15 +93,15 @@ export const PwaInstallGate: React.FC<PwaInstallGateProps> = ({ children }) => {
 
   if (installSuccess) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4 overflow-y-auto select-none text-center">
-        <div className="max-w-sm w-full space-y-6">
-          <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto">
-            <IonIcon icon={shieldCheckmarkOutline} className="text-4xl" />
+      <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-6 overflow-y-auto select-none text-center">
+        <div className="max-w-xs w-full bg-slate-800 rounded-3xl p-8 shadow-2xl border border-slate-700 space-y-6">
+          <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto shadow-inner shadow-emerald-500/20">
+            <IonIcon icon={shieldCheckmarkOutline} className="text-5xl" />
           </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white">¡Instalación Iniciada!</h2>
-            <p className="text-slate-400 text-sm font-medium px-4">
-              La aplicación se está instalando. Por favor, cierra esta pestaña del navegador y abre la aplicación "Reloj Nomina" directamente desde tu pantalla de inicio o cajón de aplicaciones.
+          <div className="space-y-3">
+            <h2 className="text-2xl font-black text-white tracking-wide">¡Instalación Iniciada!</h2>
+            <p className="text-slate-400 text-[13px] font-medium leading-relaxed">
+              La aplicación se está instalando. Por favor, cierra esta pestaña del navegador y abre la aplicación <strong>Reloj Nomina</strong> directamente desde tu pantalla de inicio.
             </p>
           </div>
         </div>
@@ -110,129 +110,98 @@ export const PwaInstallGate: React.FC<PwaInstallGateProps> = ({ children }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4 overflow-y-auto select-none">
-      <div className="max-w-sm w-full my-auto space-y-4">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-blue-600 flex items-center justify-center text-white mx-auto shadow-xl shadow-blue-500/30">
-            <IonIcon icon={shieldCheckmarkOutline} className="text-3xl" />
+    <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-6 overflow-y-auto select-none">
+      <div className="max-w-sm w-full my-auto space-y-6">
+        <div className="text-center space-y-3">
+          <div className="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center text-white mx-auto shadow-xl shadow-blue-500/30 border-4 border-slate-800">
+            <IonIcon icon={shieldCheckmarkOutline} className="text-4xl" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-3xl font-black text-white tracking-tight">
             Reloj Nomina
           </h1>
           <IonBadge
             color="warning"
-            className="px-3 py-1 font-bold text-xs rounded-full uppercase tracking-wider"
+            className="px-4 py-1.5 font-black text-[10px] rounded-full uppercase tracking-widest shadow-sm"
           >
-            Instalación Obligatoria Requerida
+            Instalación Obligatoria
           </IonBadge>
         </div>
 
-        <IonCard className="m-0 rounded-3xl border border-slate-200 shadow-2xl bg-white overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-600 p-4 text-white">
-            <h3 className="font-black text-base text-white text-center">
-              Instala la Aplicación en tu Celular
-            </h3>
-          </div>
-
-          <IonCardContent className="p-5 space-y-4">
-            <div className="text-xs text-slate-600 text-center leading-relaxed font-medium">
+        <div className="rounded-3xl border border-slate-700 shadow-2xl bg-slate-800 overflow-hidden relative">
+          <div className="bg-slate-800 p-6 space-y-5 relative z-10">
+            <div className="text-sm text-slate-300 text-center leading-relaxed font-medium">
               Por seguridad biométrica y geolocalización, debes instalar la app
               nativa en tu pantalla de inicio para acceder.
             </div>
 
             {isIos ? (
-              <div className="space-y-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-700 font-medium">
-                <div className="text-[11px] font-black uppercase text-blue-600 tracking-wider flex items-center mb-1 pb-2">
-                  <IonIcon
-                    icon={phonePortraitOutline}
-                    className="mr-1 text-xs"
-                  />
-                  Pasos para iPhone:
+              <div className="space-y-3 bg-slate-700/50 p-4 rounded-2xl border border-slate-600 text-[13px] text-slate-300 font-medium shadow-inner">
+                <div className="text-[10px] font-black uppercase text-blue-400 tracking-widest flex items-center mb-2 pb-2 border-b border-slate-600">
+                  <IonIcon icon={phonePortraitOutline} className="mr-1.5 text-sm" />
+                  Pasos para iPhone
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-black text-[11px] flex items-center justify-center shrink-0">
                     1
                   </span>
                   <span>
                     Toca el botón <strong>Compartir</strong>{" "}
-                    <IonIcon
-                      icon={shareOutline}
-                      style={{ width: "13px", height: "13px" }}
-                      className="text-blue-600 inline-block align-middle"
-                    />{" "}
+                    <IonIcon icon={shareOutline} className="text-blue-400 inline-block align-middle text-sm" />{" "}
                     en Safari.
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-black text-[11px] flex items-center justify-center shrink-0">
                     2
                   </span>
                   <span>
                     Selecciona <strong>"Agregar al inicio"</strong>{" "}
-                    <IonIcon
-                      icon={addCircleOutline}
-                      style={{ width: "13px", height: "13px" }}
-                      className="text-blue-600 inline-block align-middle"
-                    />
-                    .
+                    <IonIcon icon={addCircleOutline} className="text-blue-400 inline-block align-middle text-sm" />.
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-black text-[11px] flex items-center justify-center shrink-0">
                     3
                   </span>
                   <span>Abre la app desde tu pantalla principal.</span>
                 </div>
               </div>
             ) : deferredPrompt ? (
-              <div className="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <div className="text-[11px] font-black uppercase text-emerald-600 tracking-wider flex items-center justify-center mb-2">
-                  <IonIcon icon={logoAndroid} className="mr-1 text-sm" />
+              <div className="space-y-4 bg-slate-700/50 p-5 rounded-2xl border border-slate-600 shadow-inner">
+                <div className="text-[10px] font-black uppercase text-emerald-400 tracking-widest flex items-center justify-center mb-1">
+                  <IonIcon icon={logoAndroid} className="mr-1.5 text-sm" />
                   Instalación Android
                 </div>
-                <div className="p-2">
-                  <IonButton
-                    expand="block"
-                    color="success"
-                    className="font-black text-sm h-12 shadow-lg shadow-emerald-500/30 rounded-2xl m-0"
-                    onClick={handleAceptarInstalar}
-                  >
-                    <IonIcon
-                      slot="start"
-                      icon={downloadOutline}
-                      className="text-[23px] pr-2"
-                    />
-                    <div className="text-[12px] pt-1">Instalar App</div>
-                  </IonButton>
-                </div>
-                <div className="text-center text-[10px] text-slate-500 font-medium px-2">
+                <button
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[13px] h-14 shadow-lg shadow-emerald-500/20 rounded-2xl transition-all flex items-center justify-center uppercase tracking-widest active:scale-95"
+                  onClick={handleAceptarInstalar}
+                >
+                  <IonIcon icon={downloadOutline} className="text-lg mr-2" />
+                  Instalar App
+                </button>
+                <div className="text-center text-[11px] text-slate-400 font-medium px-2 leading-relaxed">
                   Toca el botón superior para instalar la aplicación
                   directamente en tu dispositivo sin salir de aquí.
                 </div>
               </div>
             ) : (
-              <div className="space-y-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-700 font-medium">
-                <div className="text-[11px] font-black uppercase text-emerald-600 tracking-wider flex items-center mb-1">
-                  <IonIcon icon={logoAndroid} className="mr-1 text-xs" />
-                  Pasos para Android (WebAPK):
+              <div className="space-y-3 bg-slate-700/50 p-4 rounded-2xl border border-slate-600 text-[13px] text-slate-300 font-medium shadow-inner">
+                <div className="text-[10px] font-black uppercase text-emerald-400 tracking-widest flex items-center mb-2 pb-2 border-b border-slate-600">
+                  <IonIcon icon={logoAndroid} className="mr-1.5 text-sm" />
+                  Pasos para Android (WebAPK)
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-black text-[11px] flex items-center justify-center shrink-0">
                     1
                   </span>
                   <span>
                     Toca el menú de <strong>3 puntos (⋮)</strong>{" "}
-                    <IonIcon
-                      icon={ellipsisVerticalOutline}
-                      style={{ width: "13px", height: "13px" }}
-                      className="text-slate-600 inline-block align-middle"
-                    />
-                    .
+                    <IonIcon icon={ellipsisVerticalOutline} className="text-slate-400 inline-block align-middle text-sm" />.
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-black text-[11px] flex items-center justify-center shrink-0">
                     2
                   </span>
                   <span>
@@ -240,16 +209,16 @@ export const PwaInstallGate: React.FC<PwaInstallGateProps> = ({ children }) => {
                     marcadores).
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-black text-[11px] flex items-center justify-center shrink-0">
                     3
                   </span>
                   <span>Abre la app instalada desde tu inicio.</span>
                 </div>
               </div>
             )}
-          </IonCardContent>
-        </IonCard>
+          </div>
+        </div>
       </div>
     </div>
   );

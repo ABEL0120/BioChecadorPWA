@@ -117,15 +117,26 @@ export const MenuLateral: React.FC = () => {
 
   return (
     <IonMenu contentId="main-content" type="overlay" side="start">
-      <IonHeader className="ion-no-border border-b border-slate-200 bg-white">
-        <IonToolbar style={{ "--background": "#ffffff" }}>
-          <IonTitle className="font-black tracking-tight text-slate-900">
-            Menú
-          </IonTitle>
+      <IonHeader className="ion-no-border">
+        <IonToolbar className="bg-transparent" style={{ "--background": "transparent" }}>
+          <div className="pt-8 pb-6 px-6 bg-gradient-to-b from-blue-50 to-white flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0 shadow-md">
+              <IonIcon icon={timeOutline} className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black tracking-tight text-slate-800 m-0 leading-none">
+                Reloj Nómina
+              </h2>
+              <p className="text-[10px] font-bold tracking-widest text-blue-600 uppercase mt-1">
+                Control de Asistencia
+              </p>
+            </div>
+          </div>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding" style={{ "--background": "#f8fafc" }}>
-        <IonList className="bg-transparent" lines="none">
+      
+      <IonContent className="ion-padding" style={{ "--background": "#ffffff" }}>
+        <IonList className="bg-transparent pt-2" lines="none">
           {appPages.map((appPage, index) => {
             const isSelected = location.pathname === appPage.url;
             return (
@@ -133,37 +144,53 @@ export const MenuLateral: React.FC = () => {
                 <IonItem
                   routerLink={appPage.url}
                   routerDirection="none"
-                  className={`mb-2 rounded-xl cursor-pointer ${
-                    isSelected
-                      ? "bg-blue-50 border border-blue-200"
-                      : "bg-white border border-slate-100"
-                  }`}
+                  className="mb-2 mx-3"
                   detail={false}
+                  lines="none"
+                  style={{
+                    "--padding-start": "0px",
+                    "--inner-padding-end": "0px",
+                    "--background": "transparent",
+                    "--background-hover": "transparent",
+                    "--background-activated": "transparent",
+                  }}
                 >
-                  <IonIcon
-                    slot="start"
-                    icon={appPage.icon}
-                    className={isSelected ? "text-blue-600" : "text-slate-500"}
-                  />
-                  <IonLabel
-                    className={`font-bold ${isSelected ? "text-blue-700" : "text-slate-700"} pl-2`}
+                  <div
+                    className={`flex items-center w-full px-4 py-3.5 rounded-2xl transition-all duration-300 ${
+                      isSelected
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                        : "bg-transparent text-slate-600 hover:bg-slate-100"
+                    }`}
                   >
-                    {appPage.title}
-                  </IonLabel>
+                    <IonIcon
+                      icon={appPage.icon}
+                      className={`text-[22px] mr-4 ${
+                        isSelected ? "text-white" : "text-slate-400"
+                      }`}
+                    />
+                    <IonLabel
+                      className={`font-bold tracking-wide text-[15px] ${
+                        isSelected ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      {appPage.title}
+                    </IonLabel>
+                  </div>
                 </IonItem>
               </IonMenuToggle>
             );
           })}
         </IonList>
       </IonContent>
-      <IonFooter className="ion-no-border bg-[#f8fafc]">
-        <div className="px-4 pb-8 pt-2 flex flex-col items-center">
+      
+      <IonFooter className="ion-no-border bg-white">
+        <div className="px-6 pb-10 pt-4 flex flex-col items-center">
           <button
             onClick={handleRefresh}
-            className={`flex items-center justify-center gap-2 w-full py-3 mb-8 rounded-xl font-bold transition-colors ${
+            className={`flex items-center justify-center gap-2 w-full py-4 squircle font-bold tracking-wide transition-all duration-300 shadow-sm ${
               cooldown > 0
-                ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                : "bg-slate-900 text-white hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-300 active:scale-95"
             }`}
           >
             {isRefreshing ? (
@@ -174,14 +201,14 @@ export const MenuLateral: React.FC = () => {
                 className={`text-xl ${cooldown > 0 ? "opacity-50" : ""}`}
               />
             )}
-            {cooldown > 0 ? `Espera ${cooldown}s` : "Actualizar Datos"}
+            {cooldown > 0 ? `Espera ${cooldown}s` : "Sincronizar"}
           </button>
 
           <button
             onClick={() => window.location.reload()}
-            className="text-[10px] text-slate-400 font-medium tracking-wide uppercase hover:text-slate-600 transition-colors bg-transparent border-none pb-2"
+            className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase hover:text-slate-700 transition-colors bg-transparent border-none mt-6"
           >
-            Forzar Recarga de App
+            Forzar Recarga
           </button>
         </div>
       </IonFooter>

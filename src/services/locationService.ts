@@ -99,6 +99,7 @@ export const locationService = {
           return;
         }
 
+        /*
         //Analizamos la velocidad promedio de los ultimos puntos
         if (points.length > 1) {
           for (let i = 1; i < points.length; i++) {
@@ -159,30 +160,7 @@ export const locationService = {
               return;
             }
           }
-
-          // if (points.length >= 3) {
-          //   // 0.5 para que un GPS real que esté muy quieto no dé falso positivo.
-          //   const RADIO_ESTATICO_METROS = 0.00001;
-          //   const casiInmovil = points.every(
-          //     (p) =>
-          //       getDistanceFromLatLonInMeters(
-          //         p.latitud,
-          //         p.longitud,
-          //         points[0].latitud,
-          //         points[0].longitud,
-          //       ) < RADIO_ESTATICO_METROS,
-          //   );
-          //   if (casiInmovil) {
-          //     rejected = true;
-          //     reject(
-          //       new Error(
-          //         "Se detectó una señal GPS anormalmente estática. Por favor desactiva el fake gps.",
-          //       ),
-          //     );
-          //     return;
-          //   }
-          // }
-        }
+        */
         const lastPoint = points[points.length - 1];
         resolve({
           latitud: lastPoint.latitud,
@@ -298,6 +276,7 @@ export const locationService = {
 
           if (points.length > 5) points.shift();
 
+          /*
           if (points.length > 1) {
             // 1. Detección de saltos bruscos (Rubber-banding) estrictamente
             const p1 = points[points.length - 2];
@@ -324,6 +303,7 @@ export const locationService = {
               }
             }
           }
+          */
         },
         () => {},
         { enableHighAccuracy: !isWindows, maximumAge: 0, timeout: 5000 },

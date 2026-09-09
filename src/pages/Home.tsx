@@ -1,43 +1,56 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonContent,
-  IonCard,
-  IonCardContent,
-  IonButton,
-  IonIcon,
   IonSpinner,
   IonToast,
-  IonRefresher,
-  IonRefresherContent,
   IonAlert,
   IonButtons,
   IonMenuButton,
   IonModal,
+  IonButton,
+  IonIcon,
 } from "@ionic/react";
-import { timeOutline, radioOutline } from "ionicons/icons";
+import { 
+  timeOutline, 
+  alertCircleOutline, 
+  lockClosedOutline, 
+  fingerPrintOutline,
+  warningOutline
+} from "ionicons/icons";
 import { useReloj } from "../hooks/useReloj";
 import { FormularioBusquedaEmpleado } from "../components/FormularioBusquedaEmpleado";
+import { GeofenceMap } from "../components/GeofenceMap";
 import { InfoEmpleado } from "../components/InfoEmpleado";
-import { PanelMarcaje } from "../components/PanelMarcaje";
 import { useHome } from "../hooks/useHome";
+import { useLocation } from "react-router-dom";
+
 export const Home: React.FC = () => {
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const formatMovementLabel = (mov?: string) => {
     if (!mov) return "CARGANDO...";
     if (mov === "SALIDA_COMIDA") return "SALIDA A COMER";
     if (mov === "ENTRADA_COMIDA") return "REGRESO DE COMER";
     return mov;
   };
+
   const {
     rfc,
     setRfc,
     loading,
     enrolling,
     marking,
-    showReenrollButton,
     fetchingGps,
     userLocation,
     resultado,
@@ -46,7 +59,6 @@ export const Home: React.FC = () => {
     motivoBloqueo,
     mensajeAdvertencia,
     siguienteMovimiento,
-    toleranciaDeadline,
     registroResult,
     errorMsg,
     setErrorMsg,
@@ -55,15 +67,11 @@ export const Home: React.FC = () => {
     alertState,
     setAlertState,
     hasPendingOffline,
-    handleRefresh,
-    handleObtenerGpsMapa,
     handleVerificarRfc,
     handleEnrolarBiometria,
     handleMarcarAsistencia,
-    handleSolicitarReinicio,
     enviarSolicitudReinicio,
     logout,
-    hasPendingSolicitud,
     showSolicitudModal,
     setShowSolicitudModal,
     motivoSolicitud,
@@ -73,42 +81,40 @@ export const Home: React.FC = () => {
 
   const currentTime = useReloj();
 
+
   return (
-    <IonPage className="bg-slate-100">
-      <IonHeader className="ion-no-border border-b border-slate-200 bg-white">
-        <IonToolbar style={{ "--background": "#ffffff" }}>
-          <IonButtons slot="start" className="pl-2">
-            <IonMenuButton />
+    <IonPage className="bg-slate-50">
+      <IonHeader className="ion-no-border">
+        <IonToolbar
+          className="bg-white border-b border-slate-100"
+          style={{ "--background": "#ffffff" }}
+        >
+          <IonButtons slot="start" className="pl-1">
+            <IonMenuButton style={{ color: "#1e293b" }} />
           </IonButtons>
 
-          <IonTitle className="font-black tracking-tight text-slate-900">
-            Reloj Nomina
+          <IonTitle 
+            className="font-black tracking-tight text-lg text-center pr-12"
+            style={{ color: "#1e293b" }}
+          >
+            Reloj Nómina
           </IonTitle>
+          
           {resultado && (
-            <IonButtons slot="end" className="pr-2">
-              <IonButton
+            <IonButtons slot="end" className="absolute right-2">
+              <button
                 id="btn-cambiar-empleado"
-                fill="clear"
-                className="text-xs font-bold m-0 p-0"
+                className="text-[11px] font-black tracking-widest uppercase text-red-500 bg-red-50 border border-red-200 px-4 py-2 rounded-xl shadow-sm hover:bg-red-100 hover:text-red-600 transition-all active:scale-95"
               >
-                Cambiar Empleado
-              </IonButton>
+                Salir
+              </button>
               <IonAlert
                 trigger="btn-cambiar-empleado"
                 header="¿Cambiar Empleado?"
-                message="Volverás a la pantalla de búsqueda de RFC. ¿Deseas continuar?"
+                message="Volverás a la pantalla de búsqueda. ¿Deseas continuar?"
                 buttons={[
-                  {
-                    text: "Cancelar",
-                    role: "cancel",
-                  },
-                  {
-                    text: "Aceptar",
-                    role: "confirm",
-                    handler: () => {
-                      logout();
-                    },
-                  },
+                  { text: "Cancelar", role: "cancel" },
+                  { text: "Aceptar", role: "confirm", handler: () => logout() },
                 ]}
               />
             </IonButtons>
@@ -116,107 +122,75 @@ export const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding" style={{ "--background": "#f8fafc" }}>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent />
-        </IonRefresher>
-
-        <div className="max-w-4xl mx-auto space-y-6 py-2">
-          {isLoadingSession ? (
-            <div className="flex justify-center p-10">
-              <IonSpinner name="crescent" color="primary" />
+      <IonContent scrollY={!resultado} className="bg-slate-50" style={{ "--background": "transparent" }}>
+        {isLoadingSession ? (
+          <div className="flex justify-center p-12">
+            <IonSpinner name="crescent" className="text-blue-500 w-8 h-8" />
+          </div>
+        ) : resultado ? (
+          <div className={`absolute inset-0 flex ${isDesktop ? 'flex-row' : 'flex-col'} overflow-hidden bg-slate-100`}>
+            <div className={`relative ${isDesktop ? 'flex-1 h-full' : 'h-[40vh]'} shrink-0`}>
+              <GeofenceMap
+                empresaLat={resultado.latitudEmpresa || 0}
+                empresaLng={resultado.longitudEmpresa || 0}
+                radioMetros={resultado.radioToleranciaMetros || 150}
+                userLat={userLocation?.latitud ?? null}
+                userLng={userLocation?.longitud ?? null}
+                razonSocial={resultado.razonSocial || `Sucursal #${resultado.numeroCompania}`}
+                nombreEmpleado={resultado.nombre || resultado.rfc || ""}
+              />
             </div>
-          ) : (
-            <>
-              <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-blue-600 via-blue-600 to-blue-600 p-6 text-white shadow-lg shadow-blue-500/15">
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2 text-blue-100 text-xs font-bold uppercase tracking-wider">
-                      <IonIcon
-                        icon={radioOutline}
-                        className="animate-pulse text-emerald-300 text-base"
-                      />
-                      <span>Asistencia Biométrica</span>
-                    </div>
-                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-                      Panel de Control
-                    </h1>
-                    <p className="text-blue-100 text-sm max-w-md">
-                      Registro de Asistencia en tiempo real.
-                    </p>
-                  </div>
 
-                  <div className="bg-white/20 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 flex items-center space-x-3 self-start md:self-auto">
-                    <IonIcon
-                      icon={timeOutline}
-                      className="text-2xl text-white"
-                    />
-                    <div>
-                      <div className="text-[10px] uppercase font-extrabold tracking-wider text-blue-100">
-                        Hora
-                      </div>
-                      <div className="text-lg font-mono font-bold text-white tracking-wider">
-                        {currentTime || "00:00:00"}
-                      </div>
-                    </div>
-                  </div>
+            <div className={`relative z-10 bg-white ${isDesktop ? 'w-[400px] h-full border-l border-slate-200 shadow-2xl' : 'flex-1 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] -mt-6'} flex flex-col shrink-0 overflow-hidden`}>
+              <InfoEmpleado
+                currentTime={currentTime}
+                resultado={resultado}
+                fetchingGps={fetchingGps}
+                isValido={isValido}
+                motivoBloqueo={motivoBloqueo}
+                mensajeAdvertencia={mensajeAdvertencia}
+                registroResult={registroResult}
+                marking={marking}
+                hasPendingOffline={hasPendingOffline}
+                siguienteMovimiento={siguienteMovimiento}
+                enrolling={enrolling}
+                handleMarcarAsistencia={handleMarcarAsistencia}
+                handleEnrolarBiometria={handleEnrolarBiometria}
+                formatMovementLabel={formatMovementLabel}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="relative z-10 max-w-xl mx-auto pb-8 pt-8 px-4">
+            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <IonIcon icon={timeOutline} className="text-3xl" />
                 </div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                  Iniciar Sesión
+                </h2>
+                <p className="text-sm text-slate-500 font-medium mt-2 leading-relaxed">
+                  Identifícate con tu RFC para acceder a tu panel de asistencia
+                </p>
               </div>
+              <FormularioBusquedaEmpleado
+                rfc={rfc}
+                setRfc={setRfc}
+                loading={loading}
+                handleVerificarRfc={handleVerificarRfc}
+              />
+            </div>
+          </div>
+        )}
 
-              <IonCard className="m-0 rounded-3xl border border-slate-200 shadow-md bg-white overflow-hidden">
-                {!resultado && (
-                  <FormularioBusquedaEmpleado
-                    rfc={rfc}
-                    setRfc={setRfc}
-                    loading={loading}
-                    handleVerificarRfc={handleVerificarRfc}
-                  />
-                )}
-
-                <IonCardContent
-                  className={resultado ? "p-0 bg-white" : "p-5 bg-white"}
-                >
-                  <IonAlert
-                    isOpen={!!errorMsg && !resultado}
-                    onDidDismiss={() => setErrorMsg(null)}
-                    header="Aviso del Sistema"
-                    message={errorMsg || ""}
-                    buttons={["Aceptar"]}
-                  />
-
-                  {resultado && (
-                    <>
-                      <InfoEmpleado
-                        resultado={resultado}
-                        userLocation={userLocation}
-                        fetchingGps={fetchingGps}
-                        handleObtenerGpsMapa={handleObtenerGpsMapa}
-                      />
-                      <PanelMarcaje
-                        resultado={resultado}
-                        enrolling={enrolling}
-                        marking={marking}
-                        siguienteMovimiento={siguienteMovimiento}
-                        formatMovementLabel={formatMovementLabel}
-                        isValido={isValido}
-                        motivoBloqueo={motivoBloqueo}
-                        mensajeAdvertencia={mensajeAdvertencia}
-                        handleMarcarAsistencia={handleMarcarAsistencia}
-                        handleEnrolarBiometria={handleEnrolarBiometria}
-                        handleSolicitarReinicio={handleSolicitarReinicio}
-                        registroResult={registroResult}
-                        showReenrollButton={showReenrollButton}
-                        hasPendingOffline={hasPendingOffline}
-                        hasPendingSolicitud={hasPendingSolicitud}
-                        toleranciaDeadline={toleranciaDeadline}
-                      />
-                    </>
-                  )}
-                </IonCardContent>
-              </IonCard>
-            </>
-          )}
-        </div>
+        <IonAlert
+          isOpen={!!errorMsg && !resultado}
+          onDidDismiss={() => setErrorMsg(null)}
+          header="Aviso del Sistema"
+          message={errorMsg || ""}
+          buttons={["Aceptar"]}
+        />
 
         <IonAlert
           header={alertState.title}
