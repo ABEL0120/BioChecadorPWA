@@ -19,8 +19,9 @@ export default defineConfig({
         "favicon.png",
         "icon-192.svg",
         "icon-512.svg",
-        "pwa-192x192.png",
-        "pwa-512x512.png",
+        "pwa-192x192-v2.png",
+        "pwa-512x512-v2.png",
+        "apple-touch-icon-v2.png",
       ],
       manifest: {
         name: "Reloj Nomina 2026",
@@ -33,25 +34,25 @@ export default defineConfig({
         start_url: "/?mode=pwa",
         icons: [
           {
-            src: "pwa-192x192.png",
+            src: "pwa-192x192-v2.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "pwa-512x512.png",
+            src: "pwa-512x512-v2.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "pwa-192x192.png",
+            src: "pwa-192x192-v2.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "maskable",
           },
           {
-            src: "pwa-512x512.png",
+            src: "pwa-512x512-v2.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
