@@ -126,10 +126,15 @@ const DiaHistorialItem: React.FC<{ dia: DayData; getSemaforoUI: any; formatDelay
                     <div key={ridx} className="flex items-center justify-between p-3 sm:p-4 rounded-2xl border border-slate-100 bg-white shadow-sm w-full box-border gap-3">
                       <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                         <IonBadge
-                          color={reg.tipoMovimiento.toUpperCase() === "ENTRADA" ? "primary" : "tertiary"}
-                          className="px-2.5 py-1 rounded-lg text-[9px] sm:text-[10px] flex-shrink-0 font-black tracking-widest uppercase shadow-sm"
+                          color="primary"
+                          className="px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] flex-shrink-0 font-bold tracking-wide shadow-sm"
                         >
-                          {reg.tipoMovimiento}
+                          {reg.tipoMovimiento
+                            ? reg.tipoMovimiento
+                                .replace(/_/g, " ")
+                                .toLowerCase()
+                                .replace(/\b\w/g, (char) => char.toUpperCase())
+                            : ""}
                         </IonBadge>
                         <div className="font-mono font-black text-slate-700 text-[13px] sm:text-[15px] flex items-center gap-1.5 truncate">
                           <IonIcon icon={timeOutline} className="text-slate-400 flex-shrink-0" />
