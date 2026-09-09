@@ -37,9 +37,11 @@ export const checadorApi = {
         razonSocial: raw.razonSocial ?? raw.RazonSocial,
         latitudEmpresa: raw.latitudEmpresa ?? raw.LatitudEmpresa,
         longitudEmpresa: raw.longitudEmpresa ?? raw.LongitudEmpresa,
-        radioToleranciaMetros: raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
+        radioToleranciaMetros:
+          raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
         ultimoMovimientoHoy: raw.ultimoMovimientoHoy ?? raw.UltimoMovimientoHoy,
-        trabajoRemoto: raw.trabajoRemoto ?? raw.TrabajoRemoto,
+        //  trabajoRemoto: raw.trabajoRemoto ?? raw.TrabajoRemoto,
+        trabajoRemoto: "S", // CAMBIO TEMPORAL
         numeroEmpleado: raw.numeroEmpleado ?? raw.NumeroEmpleado,
         horario: raw.horario ?? raw.Horario,
       };
@@ -144,7 +146,12 @@ export const checadorApi = {
     try {
       const response = await apiClient.post<ApiResponse<any>>(
         API_ENDPOINTS.CHECADOR.ESTATUS_SOLICITUD,
-        { rfc, numeroCompania, motivo: "consulta", tipoDispositivo: "consulta" },
+        {
+          rfc,
+          numeroCompania,
+          motivo: "consulta",
+          tipoDispositivo: "consulta",
+        },
       );
       return response.data;
     } catch (err: any) {
