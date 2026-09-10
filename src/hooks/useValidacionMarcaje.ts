@@ -270,22 +270,34 @@ export const useValidacionMarcaje = (
             const diffMinutes = (now.getTime() - entradaTime.getTime()) / 60000;
             const tolerancia = turnoHoy.toleranciaEntradaMinutos || 0;
 
-            if (diffMinutes < -30) {
-              isValido = false;
-              motivoBloqueo = "Muy temprano (Permitido 30 min antes)";
-            } else if (
-              diffMinutes >= 0 &&
-              diffMinutes <= tolerancia &&
-              tolerancia > 0
-            ) {
-              currentToleranciaDeadline = new Date(
-                entradaTime.getTime() + tolerancia * 60000,
-              );
-            } else if (diffMinutes > tolerancia) {
-              const diffHours = Math.floor(diffMinutes / 60);
-              const diffMinutesOnly = Math.floor(diffMinutes % 60);
-              mensajeAdvertencia = `Retardo (${diffHours}h ${diffMinutesOnly}min)`;
-              nextMovement = "RETARDO";
+            let blockEntrada = false;
+            if (turnoHoy.salida) {
+              const salidaTime = parseTimeToDate(turnoHoy.salida);
+              if (now.getTime() > salidaTime.getTime()) {
+                isValido = false;
+                motivoBloqueo = "Jornada laboral finalizada. No puedes registrar entrada.";
+                blockEntrada = true;
+              }
+            }
+
+            if (!blockEntrada) {
+              if (diffMinutes < -30) {
+                isValido = false;
+                motivoBloqueo = "Muy temprano (Permitido 30 min antes)";
+              } else if (
+                diffMinutes >= 0 &&
+                diffMinutes <= tolerancia &&
+                tolerancia > 0
+              ) {
+                currentToleranciaDeadline = new Date(
+                  entradaTime.getTime() + tolerancia * 60000,
+                );
+              } else if (diffMinutes > tolerancia) {
+                const diffHours = Math.floor(diffMinutes / 60);
+                const diffMinutesOnly = Math.floor(diffMinutes % 60);
+                mensajeAdvertencia = `Retardo (${diffHours}h ${diffMinutesOnly}min)`;
+                nextMovement = "RETARDO";
+              }
             }
           } else if (nextMovement === "SALIDA" && turnoHoy.salida) {
           }
