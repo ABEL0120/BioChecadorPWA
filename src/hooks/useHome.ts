@@ -5,7 +5,7 @@ import { offlineSyncService } from "../services/offlineSyncService";
 import { timeService } from "../services/timeService";
 import { checadorApi } from "../api/checadorApi";
 import { useAuthSession } from "../context/AuthSessionContext";
-import { useValidacionMarcaje } from "./useValidacionMarcaje";
+import { useValidacionMarcaje, MovimientoPermitido } from "./useValidacionMarcaje";
 import { formatError } from "../utils/errorHandler";
 import { RegistroChecadaResponseDto } from "../types/api";
 
@@ -276,7 +276,7 @@ export const useHome = () => {
     }
   };
 
-  const handleMarcarAsistencia = async () => {
+  const handleMarcarAsistencia = async (movimientoSeleccionado: MovimientoPermitido) => {
     if (!resultado || !resultado.rfc) return;
 
     setMarking(true);
@@ -284,18 +284,12 @@ export const useHome = () => {
 
     try {
       let location;
-      // if (resultado.trabajoRemoto === "S") {
-        setToastState({
-          show: true,
-          message: "Paso 1/2: Obteniendo ubicación...",
-          color: "primary",
-        });
-        const isWindows = /Windows/.test(navigator.userAgent);
-        if (isWindows) {
-          location = { latitud: 0, longitud: 0, accuracy: 0 };
-        } else {
-          location = await locationService.obtenerUbicacionActual();
-        }
+      setToastState({
+        show: true,
+        message: "Paso 1/2: Obteniendo ubicación (puede demorar)...",
+        color: "primary",
+      });
+      location = await locationService.obtenerUbicacionActual();
       // } else {
       //   location = await locationService.obtenerUbicacionAntiTrampa((segs) => {
       //     setToastState({
@@ -368,7 +362,7 @@ export const useHome = () => {
           latitud: location.latitud,
           longitud: location.longitud,
           dispositivo,
-          tipoMovimiento: siguienteMovimiento,
+          tipoMovimiento: movimientoSeleccionado,
         });
 
         setRegistroResult({
@@ -383,11 +377,11 @@ export const useHome = () => {
         setHasPendingOffline(true);
         login({
           ...resultado,
-          ultimoMovimientoHoy: siguienteMovimiento,
+          ultimoMovimientoHoy: movimientoSeleccionado,
         });
         setAlertState({
           show: true,
-          message: `Asistencia (${siguienteMovimiento}) guardada localmente (Modo Offline).`,
+          message: `Asistencia (${movimientoSeleccionado}) guardada localmente (Modo Offline).`,
           title: "Éxito",
         });
         setMarking(false);
@@ -400,20 +394,20 @@ export const useHome = () => {
         latitud: location.latitud,
         longitud: location.longitud,
         dispositivo,
-        tipoMovimiento: siguienteMovimiento,
+        tipoMovimiento: movimientoSeleccionado,
       });
 
       if (response.data) {
         setRegistroResult(response.data);
         login({
           ...resultado,
-          ultimoMovimientoHoy: siguienteMovimiento,
+          ultimoMovimientoHoy: movimientoSeleccionado,
         });
         setAlertState({
           show: true,
           message:
             response.message ||
-            `¡Asistencia (${siguienteMovimiento}) registrada exitosamente!`,
+            `¡Asistencia (${movimientoSeleccionado}) registrada exitosamente!`,
           title: (response.data.dentroDeRango || resultado.trabajoRemoto === "S") ? "Éxito" : "Fuera de Rango",
         });
       } else {

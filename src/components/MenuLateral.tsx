@@ -118,7 +118,10 @@ export const MenuLateral: React.FC = () => {
   return (
     <IonMenu contentId="main-content" type="overlay" side="start">
       <IonHeader className="ion-no-border">
-        <IonToolbar className="bg-transparent" style={{ "--background": "transparent" }}>
+        <IonToolbar
+          className="bg-transparent"
+          style={{ "--background": "transparent" }}
+        >
           <div className="pt-8 pb-6 px-6 bg-gradient-to-b from-blue-50 to-white flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0 shadow-md">
               <IonIcon icon={timeOutline} className="text-white text-xl" />
@@ -130,11 +133,14 @@ export const MenuLateral: React.FC = () => {
               <p className="text-[10px] font-bold tracking-widest text-blue-600 uppercase mt-1">
                 Control de Asistencia
               </p>
+              <p className="text-[9px] font-medium tracking-widest text-gray-200 mt-1">
+                216.250.116.7
+              </p>
             </div>
           </div>
         </IonToolbar>
       </IonHeader>
-      
+
       <IonContent className="ion-padding" style={{ "--background": "#ffffff" }}>
         <IonList className="bg-transparent pt-2" lines="none">
           {appPages.map((appPage, index) => {
@@ -182,7 +188,7 @@ export const MenuLateral: React.FC = () => {
           })}
         </IonList>
       </IonContent>
-      
+
       <IonFooter className="ion-no-border bg-white">
         <div className="px-6 pb-10 pt-4 flex flex-col items-center">
           <button

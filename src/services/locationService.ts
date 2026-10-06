@@ -208,8 +208,8 @@ export const locationService = {
         },
         {
           enableHighAccuracy: !isWindows,
-          timeout: 15000,
-          maximumAge: 15000,
+          timeout: isWindows ? 60000 : 15000,
+          maximumAge: isWindows ? 60000 : 15000,
         },
       );
     });

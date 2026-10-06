@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   IonIcon,
-  IonButton,
   IonSpinner,
   IonBadge,
 } from "@ionic/react";
@@ -12,11 +11,12 @@ import {
   warningOutline,
   lockClosedOutline,
   fingerPrintOutline,
-  arrowForwardOutline,
   navigateOutline,
   timeOutline,
+  restaurantOutline,
 } from "ionicons/icons";
 import { EstadoEmpleadoDto, RegistroChecadaResponseDto } from "../types/api";
+import { MovimientoPermitido } from "../hooks/useValidacionMarcaje";
 
 import { timeService } from "../services/timeService";
 
@@ -24,12 +24,12 @@ interface Props {
   resultado: EstadoEmpleadoDto;
   enrolling: boolean;
   marking: boolean;
-  siguienteMovimiento: string;
+  siguienteMovimiento: MovimientoPermitido[];
   formatMovementLabel: (mov?: string) => string;
   isValido: boolean;
   motivoBloqueo: string | null;
   mensajeAdvertencia: string | null;
-  handleMarcarAsistencia: () => void;
+  handleMarcarAsistencia: (movimientoSeleccionado: MovimientoPermitido) => void;
   handleEnrolarBiometria: () => void;
   handleSolicitarReinicio: () => void;
   registroResult: RegistroChecadaResponseDto | null;
@@ -38,6 +38,12 @@ interface Props {
   hasPendingSolicitud: boolean;
   toleranciaDeadline?: Date | null;
 }
+
+const getMovementIcon = (mov: string) => {
+  if (mov.includes("ENTRADA_COMIDA") || mov.includes("SALIDA_COMIDA")) return restaurantOutline;
+  if (mov.includes("ENTRADA")) return logInOutline;
+  return logOutOutline;
+};
 
 export const PanelMarcaje: React.FC<Props> = ({
   resultado,
@@ -90,26 +96,32 @@ export const PanelMarcaje: React.FC<Props> = ({
           {/* Fondo decorativo sutil */}
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
           
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center space-x-2 text-slate-800 font-black text-sm uppercase tracking-wide">
-                <IonIcon icon={checkmarkCircleOutline} className="text-xl text-emerald-500" />
-                <span>Siguiente Movimiento</span>
-              </div>
-              {timeLeft && (
-                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-amber-600 bg-amber-50/80 backdrop-blur-sm px-2.5 py-1 rounded-md w-fit border border-amber-200">
-                  <IonIcon icon={timeOutline} className="text-sm" />
-                  <span>Tolerancia restante: {timeLeft}</span>
+          <div className="flex flex-col gap-3 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center space-x-2 text-slate-800 font-black text-sm uppercase tracking-wide">
+                  <IonIcon icon={checkmarkCircleOutline} className="text-xl text-emerald-500" />
+                  <span>Siguiente Movimiento</span>
                 </div>
-              )}
+                {timeLeft && (
+                  <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-amber-600 bg-amber-50/80 backdrop-blur-sm px-2.5 py-1 rounded-md w-fit border border-amber-200">
+                    <IonIcon icon={timeOutline} className="text-sm" />
+                    <span>Tolerancia restante: {timeLeft}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center font-black text-xs text-slate-700 tracking-widest uppercase shadow-sm">
-              <IonIcon
-                icon={siguienteMovimiento === "ENTRADA" ? logInOutline : logOutOutline}
-                className="mr-2 text-lg text-blue-600"
-              />
-              {formatMovementLabel(siguienteMovimiento)}
+            <div className="flex flex-wrap gap-2">
+              {siguienteMovimiento.map((mov) => (
+                <div key={mov} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center font-black text-xs text-slate-700 tracking-widest uppercase shadow-sm">
+                  <IonIcon
+                    icon={getMovementIcon(mov)}
+                    className="mr-2 text-lg text-blue-600"
+                  />
+                  {formatMovementLabel(mov)}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -127,36 +139,43 @@ export const PanelMarcaje: React.FC<Props> = ({
             </div>
           )}
 
-          <button
-            disabled={marking || hasPendingOffline || !isValido}
-            onClick={handleMarcarAsistencia}
-            className={`relative z-10 w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
-              hasPendingOffline
-                ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                : !isValido
-                ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg hover:shadow-emerald-200 active:scale-[0.98]"
-            }`}
-          >
-            {marking ? (
-              <IonSpinner name="crescent" className="w-5 h-5 text-current" />
-            ) : hasPendingOffline ? (
-              <>
-                <IonIcon icon={logOutOutline} className="text-xl" />
-                <span>Sincronización Pendiente</span>
-              </>
-            ) : !isValido ? (
-              <>
-                <IonIcon icon={lockClosedOutline} className="text-xl" />
-                <span>Bloqueado</span>
-              </>
-            ) : (
-              <>
-                <IonIcon icon={fingerPrintOutline} className="text-xl" />
-                <span>Marcar {formatMovementLabel(siguienteMovimiento)}</span>
-              </>
-            )}
-          </button>
+          <div className="flex flex-col gap-3 relative z-10">
+            {siguienteMovimiento.map((mov) => (
+              <button
+                key={mov}
+                disabled={marking || hasPendingOffline || !isValido}
+                onClick={() => handleMarcarAsistencia(mov)}
+                className={`w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
+                  hasPendingOffline
+                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    : !isValido
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                    : mov.includes("COMIDA")
+                    ? "bg-orange-500 text-white hover:bg-orange-600 shadow-md hover:shadow-lg hover:shadow-orange-200 active:scale-[0.98]"
+                    : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg hover:shadow-emerald-200 active:scale-[0.98]"
+                }`}
+              >
+                {marking ? (
+                  <IonSpinner name="crescent" className="w-5 h-5 text-current" />
+                ) : hasPendingOffline ? (
+                  <>
+                    <IonIcon icon={logOutOutline} className="text-xl" />
+                    <span>Sincronización Pendiente</span>
+                  </>
+                ) : !isValido ? (
+                  <>
+                    <IonIcon icon={lockClosedOutline} className="text-xl" />
+                    <span>Bloqueado</span>
+                  </>
+                ) : (
+                  <>
+                    <IonIcon icon={fingerPrintOutline} className="text-xl" />
+                    <span>Marcar {formatMovementLabel(mov)}</span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
 
           <div className="relative z-10 flex justify-center mt-2">
             {showReenrollButton && !hasPendingSolicitud && (
@@ -256,3 +275,4 @@ export const PanelMarcaje: React.FC<Props> = ({
     </div>
   );
 };
+

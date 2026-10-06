@@ -33,3 +33,9 @@ vite.config*.timestamp*
 
 # Optional eslint cache
 .eslintcache
+
+
+# Ignore Specify project files
+/.agent
+/.specify
+/.gemini

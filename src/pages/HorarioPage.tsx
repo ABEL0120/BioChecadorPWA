@@ -33,7 +33,8 @@ const HorarioPage: React.FC = () => {
             <HorarioSemanal horario={user.horario || []} />
           ) : (
             <div className="text-center text-slate-500 font-medium mt-10">
-              No hay una sesión activa. Busca tu RFC en el panel principal primero.
+              No hay una sesión activa. Busca tu RFC en el panel principal
+              primero.
             </div>
           )}
         </div>

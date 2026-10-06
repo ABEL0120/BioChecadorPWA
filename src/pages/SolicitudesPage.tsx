@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   IonPage,
   IonHeader,
@@ -7,115 +7,37 @@ import {
   IonContent,
   IonButtons,
   IonMenuButton,
-  IonButton,
   IonIcon,
   IonSpinner,
-  useIonToast,
-  useIonAlert,
+  IonToast,
+  IonAlert,
 } from "@ionic/react";
 import { shieldCheckmarkOutline } from "ionicons/icons";
-import { useAuthSession } from "../context/AuthSessionContext";
-import { checadorApi } from "../api/checadorApi";
-import { formatError } from "../utils/errorHandler";
-import { biometricService } from "../services/biometricService";
+import { useSolicitudes } from "../hooks/useSolicitudes";
 
 const SolicitudesPage: React.FC = () => {
-  const { user } = useAuthSession();
-  const [presentToast] = useIonToast();
-  const [presentAlert] = useIonAlert();
-
-  const [motivoSolicitud, setMotivoSolicitud] = useState("");
-  const [enviandoSolicitud, setEnviandoSolicitud] = useState(false);
-
-  const [hasPending, setHasPending] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(false);
-
-  React.useEffect(() => {
-    const checkEstatus = async () => {
-      if (!user || !user.rfc) return;
-      setLoadingStatus(true);
-      try {
-        const resp = await checadorApi.consultarEstatusSolicitud(
-          user.rfc,
-          user.numeroCompania || 0,
-        );
-        setHasPending(!resp.success);
-      } catch (err) {
-        setHasPending(false);
-      } finally {
-        setLoadingStatus(false);
-      }
-    };
-    checkEstatus();
-  }, [user]);
-
-  const enviarSolicitudReinicio = async () => {
-    if (!motivoSolicitud.trim()) {
-      presentToast({
-        message: "Por favor, ingresa un motivo válido.",
-        duration: 3000,
-        color: "warning",
-      });
-      return;
-    }
-    if (!user || !user.rfc) return;
-
-    setEnviandoSolicitud(true);
-    try {
-      const resp = await checadorApi.enviarSolicitud({
-        rfc: user.rfc,
-        numeroCompania: user.numeroCompania || 0,
-        motivo: motivoSolicitud.trim(),
-        tipoDispositivo: biometricService.getDeviceName(),
-      });
-
-
-      if (resp.success) {
-        localStorage.setItem(
-          `solicitud_pendiente_${user.rfc}`,
-          Date.now().toString(),
-        );
-        setMotivoSolicitud("");
-        setHasPending(true);
-        presentAlert({
-          header: "Solicitud Enviada",
-          message:
-            "Tu solicitud ha sido enviada al administrador. Una vez aprobada, podrás registrar tu nueva huella.",
-          buttons: ["OK"],
-        });
-      } else {
-        if (
-          resp.message?.includes("Ya existe una solicitud pendiente") ||
-          resp.message?.includes("Ya cuentas con una solicitud pendiente")
-        ) {
-          localStorage.setItem(
-            `solicitud_pendiente_${user.rfc}`,
-            Date.now().toString(),
-          );
-          setHasPending(true);
-        }
-        presentAlert({
-          header: "Aviso",
-          message: resp.message || "Ocurrió un error al enviar la solicitud.",
-          buttons: ["OK"],
-        });
-      }
-    } catch (err: any) {
-      presentAlert({
-        header: "Error",
-        message: formatError(err, "Error al conectar con el servidor."),
-        buttons: ["OK"],
-      });
-    } finally {
-      setEnviandoSolicitud(false);
-    }
-  };
+  const {
+    user,
+    motivoSolicitud,
+    setMotivoSolicitud,
+    enviandoSolicitud,
+    hasPending,
+    loadingStatus,
+    enviarSolicitudReinicio,
+    alertInfo,
+    closeAlert,
+    toastInfo,
+    closeToast,
+  } = useSolicitudes();
 
   if (!user) {
     return (
       <IonPage>
         <IonHeader className="ion-no-border">
-          <IonToolbar className="bg-white/80 backdrop-blur-lg border-b border-slate-100" style={{ "--background": "transparent" }}>
+          <IonToolbar
+            className="bg-white/80 backdrop-blur-lg border-b border-slate-100"
+            style={{ "--background": "transparent" }}
+          >
             <IonButtons slot="start" className="pl-1">
               <IonMenuButton className="text-slate-700" />
             </IonButtons>
@@ -124,14 +46,21 @@ const SolicitudesPage: React.FC = () => {
             </IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding" style={{ "--background": "#f8fafc" }}>
+        <IonContent
+          className="ion-padding"
+          style={{ "--background": "#f8fafc" }}
+        >
           <div className="flex items-center justify-center h-full">
             <div className="text-center bg-white p-8 rounded-3xl shadow-sm border border-slate-100 max-w-sm w-full mx-4">
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <IonIcon icon={shieldCheckmarkOutline} className="text-slate-300 text-3xl" />
+                <IonIcon
+                  icon={shieldCheckmarkOutline}
+                  className="text-slate-300 text-3xl"
+                />
               </div>
               <p className="text-slate-600 font-bold leading-relaxed">
-                Identifícate con tu RFC en el Panel Principal para enviar solicitudes.
+                Identifícate con tu RFC en el Panel Principal para enviar
+                solicitudes.
               </p>
             </div>
           </div>
@@ -143,7 +72,10 @@ const SolicitudesPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
-        <IonToolbar className="bg-white/80 backdrop-blur-lg border-b border-slate-100" style={{ "--background": "transparent" }}>
+        <IonToolbar
+          className="bg-white/80 backdrop-blur-lg border-b border-slate-100"
+          style={{ "--background": "transparent" }}
+        >
           <IonButtons slot="start" className="pl-1">
             <IonMenuButton className="text-slate-700" />
           </IonButtons>
@@ -157,14 +89,17 @@ const SolicitudesPage: React.FC = () => {
         <div className="max-w-md mx-auto pt-4 flex flex-col h-full">
           <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-60 -mt-10 -mr-10 pointer-events-none"></div>
-            
+
             <h2 className="text-2xl font-black text-slate-800 text-center mb-2 relative z-10">
               Solicitar Reinicio
             </h2>
 
             {loadingStatus ? (
               <div className="flex flex-col items-center justify-center py-12 relative z-10">
-                <IonSpinner name="crescent" className="mb-4 text-blue-500 w-8 h-8" />
+                <IonSpinner
+                  name="crescent"
+                  className="mb-4 text-blue-500 w-8 h-8"
+                />
                 <p className="text-slate-500 text-sm font-bold tracking-wide uppercase">
                   Verificando estatus...
                 </p>
@@ -172,7 +107,10 @@ const SolicitudesPage: React.FC = () => {
             ) : hasPending ? (
               <div className="bg-amber-50/80 backdrop-blur-sm border border-amber-200 p-6 rounded-2xl mt-6 relative z-10 shadow-sm">
                 <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <IonIcon icon={shieldCheckmarkOutline} className="text-amber-500 text-xl" />
+                  <IonIcon
+                    icon={shieldCheckmarkOutline}
+                    className="text-amber-500 text-xl"
+                  />
                 </div>
                 <p className="text-amber-700 text-sm font-bold text-center leading-relaxed">
                   Ya cuentas con una solicitud pendiente en revisión. Por favor,
@@ -183,8 +121,8 @@ const SolicitudesPage: React.FC = () => {
               <div className="relative z-10">
                 <p className="text-[13px] text-slate-500 text-center mb-8 leading-relaxed font-medium">
                   Si cambiaste de celular o tienes problemas con el sensor,
-                  ingresa el motivo para que un administrador autorice el registro
-                  de tu nuevo dispositivo.
+                  ingresa el motivo para que un administrador autorice el
+                  registro de tu nuevo dispositivo.
                 </p>
 
                 <div className="mb-8">
@@ -224,6 +162,22 @@ const SolicitudesPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        <IonAlert
+          isOpen={alertInfo?.show ?? false}
+          onDidDismiss={closeAlert}
+          header={alertInfo?.header ?? ""}
+          message={alertInfo?.message ?? ""}
+          buttons={["OK"]}
+        />
+
+        <IonToast
+          isOpen={toastInfo?.show ?? false}
+          onDidDismiss={closeToast}
+          message={toastInfo?.message ?? ""}
+          duration={3000}
+          color={toastInfo?.color ?? "primary"}
+        />
       </IonContent>
     </IonPage>
   );

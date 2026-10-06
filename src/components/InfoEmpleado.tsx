@@ -6,6 +6,7 @@ import {
   lockClosedOutline,
   fingerPrintOutline,
 } from "ionicons/icons";
+import { MovimientoPermitido } from "../hooks/useValidacionMarcaje";
 
 interface InfoEmpleadoProps {
   currentTime: string;
@@ -17,9 +18,9 @@ interface InfoEmpleadoProps {
   registroResult: any | null;
   marking: boolean;
   hasPendingOffline: boolean;
-  siguienteMovimiento: string;
+  siguienteMovimiento: MovimientoPermitido[];
   enrolling: boolean;
-  handleMarcarAsistencia: () => void;
+  handleMarcarAsistencia: (movimientoSeleccionado: MovimientoPermitido) => void;
   handleEnrolarBiometria: () => void;
   formatMovementLabel: (mov?: string) => string;
 }
@@ -122,39 +123,44 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
         </div>
       )}
 
-      <div className="mt-auto shrink-0 pt-4">
+      <div className="mt-auto shrink-0 pt-4 flex flex-col gap-3">
         {resultado?.tieneBiometria ? (
-          <button
-            disabled={marking || hasPendingOffline || !isValido}
-            onClick={handleMarcarAsistencia}
-            className={`w-full h-16 rounded-[20px] font-black text-lg tracking-wide transition-all duration-300 flex items-center justify-center gap-3 ${
-              hasPendingOffline
-                ? "bg-slate-200 text-slate-500 border border-slate-300"
-                : !isValido
-                  ? "bg-slate-100 text-slate-400 border border-slate-200"
-                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
-            }`}
-          >
-            {marking ? (
-              <IonSpinner name="crescent" className="w-6 h-6 text-current" />
-            ) : !isValido ? (
-              <>
-                <IonIcon
-                  icon={lockClosedOutline}
-                  className="text-2xl shrink-0"
-                />
-                <span>Bloqueado</span>
-              </>
-            ) : (
-              <>
-                <IonIcon
-                  icon={fingerPrintOutline}
-                  className="text-2xl shrink-0"
-                />
-                <span>Marcar {formatMovementLabel(siguienteMovimiento)}</span>
-              </>
-            )}
-          </button>
+          siguienteMovimiento.map((mov) => (
+            <button
+              key={mov}
+              disabled={marking || hasPendingOffline || !isValido}
+              onClick={() => handleMarcarAsistencia(mov)}
+              className={`w-full h-16 rounded-[20px] font-black text-lg tracking-wide transition-all duration-300 flex items-center justify-center gap-3 ${
+                hasPendingOffline
+                  ? "bg-slate-200 text-slate-500 border border-slate-300"
+                  : !isValido
+                    ? "bg-slate-100 text-slate-400 border border-slate-200"
+                    : mov.includes("COMIDA")
+                    ? "bg-orange-500 text-white hover:bg-orange-600 shadow-xl shadow-orange-200/50 active:scale-[0.98]"
+                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
+              }`}
+            >
+              {marking ? (
+                <IonSpinner name="crescent" className="w-6 h-6 text-current" />
+              ) : !isValido ? (
+                <>
+                  <IonIcon
+                    icon={lockClosedOutline}
+                    className="text-2xl shrink-0"
+                  />
+                  <span>Bloqueado</span>
+                </>
+              ) : (
+                <>
+                  <IonIcon
+                    icon={fingerPrintOutline}
+                    className="text-2xl shrink-0"
+                  />
+                  <span>Marcar {formatMovementLabel(mov)}</span>
+                </>
+              )}
+            </button>
+          ))
         ) : (
           <button
             disabled={enrolling}
