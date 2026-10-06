@@ -4,7 +4,11 @@ import App from "./App";
 import "./index.css";
 import { registerSW } from "virtual:pwa-register";
 
-registerSW({ immediate: true });
+const updateSW = registerSW({
+  onNeedRefresh() {
+    updateSW(true);
+  },
+});
 
 const container = document.getElementById("root");
 const root = createRoot(container!);

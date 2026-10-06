@@ -26,7 +26,7 @@ export default defineConfig({
       manifest: {
         name: "Reloj Nomina 2026",
         short_name: "Reloj Nomina",
-        description: "Sistema de Control de Asistencia Biométrica y GPS",
+        description: "Sistema de Control de Asistencia BiomǸtrica y GPS",
         theme_color: "#2563eb",
         background_color: "#f8fafc",
         display: "standalone",
@@ -66,7 +66,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-        navigateFallback: "index.html",
+        navigateFallback: "/index.html",
+        navigateFallbackAllowlist: [/^(?!\/__).*/],
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
