@@ -3,7 +3,7 @@ import { EstadoEmpleadoDto, TurnoDetalleDto } from "../types/api";
 import { GpsLocationResult } from "../services/locationService";
 import { timeService } from "../services/timeService";
 
-export type MovimientoPermitido = 
+export type MovimientoPermitido =
   | "ENTRADA"
   | "SALIDA"
   | "RETARDO"
@@ -53,7 +53,7 @@ const getHorarioArray = (empleado: EstadoEmpleadoDto): TurnoDetalleDto[] => {
   }
   if (empleado.horario && typeof empleado.horario === "object") {
     const possibleArray = Object.values(empleado.horario).find((val) =>
-      Array.isArray(val)
+      Array.isArray(val),
     );
     if (possibleArray) {
       return possibleArray as TurnoDetalleDto[];
@@ -132,7 +132,14 @@ export const useValidacionMarcaje = (
           }
         }
 
-        const ultimo = (empleado.ultimoMovimientoHoy || "").toUpperCase();
+        const hoyStr = timeService.now().toISOString().split("T")[0];
+        const fechaGuardado = (empleado as any).fechaGuardadoLocal;
+        let ultimo = (empleado.ultimoMovimientoHoy || "").toUpperCase();
+
+        if (fechaGuardado && fechaGuardado !== hoyStr) {
+          ultimo = "";
+        }
+
         let fallbackMovements: MovimientoPermitido[] = ["ENTRADA"];
         if (!ultimo) {
           fallbackMovements = ["ENTRADA"];
@@ -149,7 +156,9 @@ export const useValidacionMarcaje = (
         if (!isDentroDeRango) {
           setResult({
             isValido: false,
-            motivoBloqueo: distancia ? `Fuera del área permitida (a ${Math.round(distancia)}m, límite: ${empleado.radioToleranciaMetros}m).` : "Fuera del área permitida",
+            motivoBloqueo: distancia
+              ? `Fuera del área permitida (a ${Math.round(distancia)}m, límite: ${empleado.radioToleranciaMetros}m).`
+              : "Fuera del área permitida",
             mensajeAdvertencia: null,
             siguienteMovimiento: fallbackMovements,
             distanciaMetros: distancia !== null ? Math.round(distancia) : null,
@@ -227,17 +236,24 @@ export const useValidacionMarcaje = (
         let mensajeAdvertenciaFinal: string | null = null;
         let currentToleranciaDeadline: Date | null = null;
 
-        if (nextMovements[0] === "ENTRADA" && turnoHoy.entrada && nextMovements.length === 1) {
+        if (
+          nextMovements[0] === "ENTRADA" &&
+          turnoHoy.entrada &&
+          nextMovements.length === 1
+        ) {
           const entradaTime = parseTimeToDate(turnoHoy.entrada);
           const diffMinutes = (now.getTime() - entradaTime.getTime()) / 60000;
           const tolerancia = turnoHoy.toleranciaEntradaMinutos || 0;
 
+          // Restricciones de horario (marcar muy tarde o muy temprano)
+          /*
           let blockEntrada = false;
           if (turnoHoy.salida) {
             const salidaTime = parseTimeToDate(turnoHoy.salida);
             if (now.getTime() > salidaTime.getTime()) {
               isValido = false;
-              motivoBloqueoFinal = "Jornada laboral finalizada. No puedes registrar entrada.";
+              motivoBloqueoFinal =
+                "Jornada laboral finalizada. No puedes registrar entrada.";
               blockEntrada = true;
             }
           }
@@ -246,20 +262,19 @@ export const useValidacionMarcaje = (
             if (diffMinutes < -30) {
               isValido = false;
               motivoBloqueoFinal = "Muy temprano (Permitido 30 min antes)";
-            } else if (
-              diffMinutes >= 0 &&
-              diffMinutes <= tolerancia &&
-              tolerancia > 0
-            ) {
-              currentToleranciaDeadline = new Date(
-                entradaTime.getTime() + tolerancia * 60000,
-              );
-            } else if (diffMinutes > tolerancia) {
-              const diffHours = Math.floor(diffMinutes / 60);
-              const diffMinutesOnly = Math.floor(diffMinutes % 60);
-              mensajeAdvertenciaFinal = `Retardo (${diffHours}h ${diffMinutesOnly}min)`;
-              nextMovements = ["RETARDO"];
             }
+          }
+          */
+
+          if (diffMinutes >= 0 && diffMinutes <= tolerancia && tolerancia > 0) {
+            currentToleranciaDeadline = new Date(
+              entradaTime.getTime() + tolerancia * 60000,
+            );
+          } else if (diffMinutes > tolerancia) {
+            const diffHours = Math.floor(diffMinutes / 60);
+            const diffMinutesOnly = Math.floor(diffMinutes % 60);
+            mensajeAdvertenciaFinal = `Retardo (${diffHours}h ${diffMinutesOnly}min)`;
+            nextMovements = ["RETARDO"];
           }
         }
 

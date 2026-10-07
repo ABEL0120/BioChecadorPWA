@@ -14,7 +14,7 @@ export interface AuthSessionContextType {
   user: EstadoEmpleadoDto | null;
   login: (user: EstadoEmpleadoDto) => void;
   logout: () => void;
-  refresh: () => Promise<{ success: boolean; message: string; }>;
+  refresh: () => Promise<{ success: boolean; message: string }>;
   isLoadingSession: boolean;
 }
 
@@ -45,8 +45,12 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
               deviceName,
             );
             if (res.success && res.data && res.data.existe) {
-              setUser(res.data);
-              localStorage.setItem(SESSION_KEY, JSON.stringify(res.data));
+              const userData = {
+                ...res.data,
+                fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+              };
+              setUser(userData);
+              localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
             } else if (!res.success) {
               logout();
             }
@@ -78,7 +82,6 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
               syncedAny = true;
             }
           } catch (err: any) {
-
             if (
               err.response &&
               err.response.status >= 400 &&
@@ -92,8 +95,7 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
         if (syncedAny) {
           refresh();
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     };
 
     window.addEventListener("online", syncOfflinePunches);
@@ -107,8 +109,12 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const login = (newUser: EstadoEmpleadoDto) => {
-    setUser(newUser);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(newUser));
+    const userData = {
+      ...newUser,
+      fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+    };
+    setUser(userData);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
   };
 
   const logout = () => {
@@ -119,7 +125,8 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = async (): Promise<{ success: boolean; message: string }> => {
-    if (isRefreshing) return { success: false, message: "Actualización en progreso..." };
+    if (isRefreshing)
+      return { success: false, message: "Actualización en progreso..." };
 
     const stored = localStorage.getItem(SESSION_KEY);
     const currentUser = stored
@@ -127,17 +134,27 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
       : null;
 
     if (!currentUser?.rfc || !navigator.onLine) {
-      return { success: false, message: "No se puede actualizar sin conexión o sin sesión." };
+      return {
+        success: false,
+        message: "No se puede actualizar sin conexión o sin sesión.",
+      };
     }
-    
+
     setIsRefreshing(true);
     try {
       const deviceName = biometricService.getDeviceName();
       const res = await checadorApi.verificarRfc(currentUser.rfc, deviceName);
       if (res.success && res.data && res.data.existe) {
-        setUser(res.data);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(res.data));
-        return { success: true, message: "Información actualizada correctamente." };
+        const userData = {
+          ...res.data,
+          fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+        };
+        setUser(userData);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+        return {
+          success: true,
+          message: "Información actualizada correctamente.",
+        };
       } else if (!res.success) {
         logout();
         return { success: false, message: res.message || "Sesión expirada." };
@@ -157,7 +174,8 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [refresh]);
 
   return (
