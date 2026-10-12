@@ -77,6 +77,18 @@ class TimeService {
     }
     return new Date(Date.now() + this.fallbackOffsetMs);
   }
+
+  public nowIsoLocal(): string {
+    const d = this.now();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    const seconds = pad(d.getSeconds());
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  }
 }
 
 export const timeService = new TimeService();

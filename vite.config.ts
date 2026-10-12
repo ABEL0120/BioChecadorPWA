@@ -69,7 +69,7 @@ export default defineConfig({
         navigateFallback: "/index.html",
         navigateFallbackAllowlist: [/^(?!\/__).*/],
         clientsClaim: true,
-        skipWaiting: true,
+        skipWaiting: false,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -120,6 +120,26 @@ export default defineConfig({
         target: "https://localhost:7259",
         changeOrigin: true,
         secure: false,
+      },
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("leaflet") || id.includes("react-leaflet")) {
+              return "vendor-leaflet";
+            }
+            if (id.includes("@ionic")) {
+              return "vendor-ionic";
+            }
+            if (id.includes("@simplewebauthn")) {
+              return "vendor-webauthn";
+            }
+          }
+        },
       },
     },
   },

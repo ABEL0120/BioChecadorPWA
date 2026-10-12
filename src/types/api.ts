@@ -43,6 +43,11 @@ export interface EstadoEmpleadoDto {
   horario?: HorarioDto | TurnoDetalleDto[];
   trabajoRemoto?: string;
   numeroEmpleado?: number;
+  correoEmpleado?: string;
+  jefeInmediato?: number;
+  diasMinimoVacaciones?: number;
+  minimoVacaciones?: number;
+  maximoVacaciones?: number;
 }
 
 export interface HistoricoAMNDto {
@@ -93,6 +98,8 @@ export interface MarcarAsistenciaRequest {
     | "RETARDO"
     | "SALIDA_COMIDA"
     | "ENTRADA_COMIDA";
+  fechaHora?: string;
+  FechaHora?: string;
 }
 
 export interface RegistroChecadaResponseDto {

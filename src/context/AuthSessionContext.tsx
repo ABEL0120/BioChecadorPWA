@@ -31,38 +31,62 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoadingSession, setIsLoadingSession] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Timeout de seguridad máximo de 6 segundos para garantizar que jamás se quede congelada la app
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted) {
+        setIsLoadingSession(false);
+      }
+    }, 6000);
+
     const hydrateSession = async () => {
       try {
         const stored = localStorage.getItem(SESSION_KEY);
         if (stored) {
           const parsedUser = JSON.parse(stored) as EstadoEmpleadoDto;
-          setUser(parsedUser);
+          if (isMounted) {
+            setUser(parsedUser);
+            // Si ya tenemos datos guardados localmente, liberamos la interfaz de inmediato
+            setIsLoadingSession(false);
+          }
 
+          // Validación en segundo plano (Stale-While-Revalidate)
           if (navigator.onLine && parsedUser.rfc) {
             const deviceName = biometricService.getDeviceName();
             const res = await checadorApi.verificarRfc(
               parsedUser.rfc,
               deviceName,
             );
-            if (res.success && res.data && res.data.existe) {
-              const userData = {
-                ...res.data,
-                fechaGuardadoLocal: new Date().toISOString().split("T")[0],
-              };
-              setUser(userData);
-              localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
-            } else if (!res.success) {
-              logout();
+            if (isMounted) {
+              if (res.success && res.data && res.data.existe) {
+                const userData = {
+                  ...res.data,
+                  fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+                };
+                setUser(userData);
+                localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+              } else if (!res.success) {
+                logout();
+              }
             }
           }
         }
       } catch (err) {
       } finally {
-        setIsLoadingSession(false);
+        if (isMounted) {
+          setIsLoadingSession(false);
+        }
+        clearTimeout(safetyTimeout);
       }
     };
 
     hydrateSession();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   useEffect(() => {

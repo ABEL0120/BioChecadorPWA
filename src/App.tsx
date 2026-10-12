@@ -7,14 +7,31 @@ import {
 } from "@ionic/react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { IonReactRouter } from "@ionic/react-router";
+import React, { lazy, Suspense } from "react";
 import Home from "./pages/Home";
 import { PwaInstallGate } from "./components/PwaInstallGate";
 import { AuthSessionProvider } from "./context/AuthSessionContext";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { MenuLateral } from "./components/MenuLateral";
-import HorarioPage from "./pages/HorarioPage";
-import HistorialPage from "./pages/HistorialPage";
-import SolicitudesPage from "./pages/SolicitudesPage";
+
+const HorarioPage = lazy(() => import("./pages/HorarioPage"));
+const HistorialPage = lazy(() => import("./pages/HistorialPage"));
+const SolicitudesPage = lazy(() => import("./pages/SolicitudesPage"));
+const VacacionesScreen = lazy(() =>
+  import("./pages/VacacionesScreen").then((m) => ({ default: m.VacacionesScreen })),
+);
+const RecibosPage = lazy(() => import("./pages/RecibosPage"));
+
+const PageLoadingFallback: React.FC = () => (
+  <div className="flex h-full w-full items-center justify-center bg-slate-50 min-h-[50vh]">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <p className="text-[11px] font-black tracking-wider uppercase text-slate-400">
+        Cargando sección...
+      </p>
+    </div>
+  </div>
+);
 import { IonSplitPane } from "@ionic/react";
 
 import "@ionic/react/css/core.css";
@@ -93,13 +110,29 @@ const App: React.FC = () => (
                 <Home />
               </Route>
               <Route exact path="/horario">
-                <HorarioPage />
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <HorarioPage />
+                </Suspense>
               </Route>
               <Route exact path="/historial">
-                <HistorialPage />
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <HistorialPage />
+                </Suspense>
               </Route>
               <Route exact path="/solicitudes">
-                <SolicitudesPage />
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <SolicitudesPage />
+                </Suspense>
+              </Route>
+              <Route exact path="/vacaciones">
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <VacacionesScreen />
+                </Suspense>
+              </Route>
+              <Route exact path="/recibos">
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <RecibosPage />
+                </Suspense>
               </Route>
               <Route exact path="/">
                 <Redirect to="/home" />

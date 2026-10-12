@@ -23,7 +23,9 @@ body {
   --ion-color-step-850: #1e293b !important;
   --ion-color-step-900: #0f172a !important;
   --ion-color-step-950: #020617 !important;
-  --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  --ion-font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif !important;
 }
 
 body,
@@ -45,7 +47,9 @@ ion-toolbar {
   --border-color: var(--ion-border-color) !important;
 }
 
-ion-item, ion-list, ion-card {
+ion-item,
+ion-list,
+ion-card {
   --background: var(--ion-card-background) !important;
   --color: var(--ion-text-color) !important;
   background: var(--ion-card-background) !important;
@@ -73,6 +77,32 @@ ion-item, ion-list, ion-card {
 }
 
 .floating-card {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.01);
   border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+input[type="date"],
+input[type="time"],
+input[type="month"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }

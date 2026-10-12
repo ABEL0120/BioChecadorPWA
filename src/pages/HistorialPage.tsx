@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonPage,
   IonHeader,
@@ -9,6 +9,8 @@ import {
   IonMenuButton,
   IonSpinner,
   IonIcon,
+  IonInfiniteScroll,
+  IonInfiniteScrollContent,
 } from "@ionic/react";
 import {
   calendarOutline,
@@ -23,6 +25,9 @@ import {
   DayData,
   SemaforoUI,
 } from "../components/DiaHistorialItem";
+import { SinSesionMensaje } from "../components/SinSesionMensaje";
+
+const PAGE_SIZE = 15;
 
 const getSemaforoUI = (estado: DayData["estado"]): SemaforoUI | null => {
   switch (estado) {
@@ -90,6 +95,23 @@ const HistorialPage: React.FC = () => {
     diasDetallados,
   } = useHistorial();
 
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [diasDetallados]);
+
+  const handleInfinite = (ev: CustomEvent<void>) => {
+    setTimeout(() => {
+      setVisibleCount((prev) =>
+        Math.min(prev + PAGE_SIZE, diasDetallados.length)
+      );
+      (ev.target as HTMLIonInfiniteScrollElement).complete();
+    }, 250);
+  };
+
+  const diasVisibles = diasDetallados.slice(0, visibleCount);
+
   return (
     <IonPage id="historial-page" className="bg-slate-100">
       <IonHeader className="ion-no-border">
@@ -109,22 +131,30 @@ const HistorialPage: React.FC = () => {
       <IonContent className="ion-padding" style={{ "--background": "#f8fafc" }}>
         <div className="max-w-xl mx-auto py-4">
           {!user ? (
-            <div className="text-center text-slate-500 font-bold mt-10">
-              Inicia sesión para ver tu historial.
-            </div>
+            <SinSesionMensaje />
           ) : (
             <>
               <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-6 flex flex-col gap-5 w-full box-border relative overflow-hidden">
-                <div className="flex items-center gap-2 relative z-10">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                    <IonIcon
-                      icon={filterOutline}
-                      className="text-blue-500 text-lg"
-                    />
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                      <IonIcon
+                        icon={filterOutline}
+                        className="text-blue-500 text-lg"
+                      />
+                    </div>
+                    <span className="font-black tracking-wide text-slate-800 text-sm uppercase">
+                      Filtro de Fechas
+                    </span>
                   </div>
-                  <span className="font-black tracking-wide text-slate-800 text-sm uppercase">
-                    Filtro de Fechas
-                  </span>
+                  {diasDetallados.length > 0 && (
+                    <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl">
+                      {diasDetallados.length}{" "}
+                      {diasDetallados.length === 1 ? "día" : "días"}
+                      {diasDetallados.length > visibleCount &&
+                        ` (mostrando ${diasVisibles.length})`}
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4 w-full relative z-10">
                   <div className="w-full">
@@ -178,15 +208,26 @@ const HistorialPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="w-full box-border pb-8">
-                  {diasDetallados.map((dia, idx) => (
+                  {diasVisibles.map((dia, idx) => (
                     <DiaHistorialItem
-                      key={idx}
+                      key={dia.fechaStr || idx}
                       dia={dia}
                       getSemaforoUI={getSemaforoUI}
                       formatDelay={formatDelay}
                       user={user}
                     />
                   ))}
+
+                  <IonInfiniteScroll
+                    threshold="150px"
+                    disabled={visibleCount >= diasDetallados.length}
+                    onIonInfinite={handleInfinite}
+                  >
+                    <IonInfiniteScrollContent
+                      loadingSpinner="crescent"
+                      loadingText="Cargando más días..."
+                    />
+                  </IonInfiniteScroll>
                 </div>
               )}
             </>

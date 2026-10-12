@@ -1,5 +1,6 @@
 import localforage from "localforage";
 import { MarcarAsistenciaRequest } from "../types/api";
+import { timeService } from "./timeService";
 
 const PENDING_PUNCHES_KEY = "pending_punches";
 
@@ -18,8 +19,11 @@ export const offlineSyncService = {
   guardarChecadaLocal: async (punch: MarcarAsistenciaRequest): Promise<void> => {
     try {
       const existing = await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
+      const fecha = punch.fechaHora || timeService.nowIsoLocal();
       const newPunch: PendingPunch = {
         ...punch,
+        fechaHora: fecha,
+        FechaHora: fecha,
         id: Date.now() + Math.random(),
         timestamp: Date.now(),
       };

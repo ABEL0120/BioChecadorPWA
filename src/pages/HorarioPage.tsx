@@ -10,6 +10,7 @@ import {
 } from "@ionic/react";
 import { HorarioSemanal } from "../components/HorarioSemanal";
 import { useAuthSession } from "../context/AuthSessionContext";
+import { SinSesionMensaje } from "../components/SinSesionMensaje";
 
 const HorarioPage: React.FC = () => {
   const { user } = useAuthSession();
@@ -32,10 +33,7 @@ const HorarioPage: React.FC = () => {
           {user ? (
             <HorarioSemanal horario={user.horario || []} />
           ) : (
-            <div className="text-center text-slate-500 font-medium mt-10">
-              No hay una sesión activa. Busca tu RFC en el panel principal
-              primero.
-            </div>
+            <SinSesionMensaje />
           )}
         </div>
       </IonContent>

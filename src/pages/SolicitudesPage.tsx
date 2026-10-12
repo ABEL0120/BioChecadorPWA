@@ -14,6 +14,7 @@ import {
 } from "@ionic/react";
 import { shieldCheckmarkOutline } from "ionicons/icons";
 import { useSolicitudes } from "../hooks/useSolicitudes";
+import { SinSesionMensaje } from "../components/SinSesionMensaje";
 
 const SolicitudesPage: React.FC = () => {
   const {
@@ -50,20 +51,7 @@ const SolicitudesPage: React.FC = () => {
           className="ion-padding"
           style={{ "--background": "#f8fafc" }}
         >
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center bg-white p-8 rounded-3xl shadow-sm border border-slate-100 max-w-sm w-full mx-4">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <IonIcon
-                  icon={shieldCheckmarkOutline}
-                  className="text-slate-300 text-3xl"
-                />
-              </div>
-              <p className="text-slate-600 font-bold leading-relaxed">
-                Identifícate con tu RFC en el Panel Principal para enviar
-                solicitudes.
-              </p>
-            </div>
-          </div>
+          <SinSesionMensaje />
         </IonContent>
       </IonPage>
     );

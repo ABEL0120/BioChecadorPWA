@@ -343,6 +343,9 @@ export const useHome = () => {
         dispositivo = authData.dispositivo;
       }
 
+      // Fecha y hora exacta generada en este mismo instante tras validar datos biométricos
+      const fechaHoraMarcaje = timeService.nowIsoLocal();
+
       /*
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
@@ -363,12 +366,14 @@ export const useHome = () => {
           longitud: location.longitud,
           dispositivo,
           tipoMovimiento: movimientoSeleccionado,
+          fechaHora: fechaHoraMarcaje,
+          FechaHora: fechaHoraMarcaje,
         });
 
         setRegistroResult({
           dentroDeRango: true,
           distanciaMetros: 0,
-          fechaHora: timeService.now().toISOString(),
+          fechaHora: fechaHoraMarcaje,
           mensaje: "Guardado localmente. Se sincronizará al conectarse a red.",
           nombre: resultado.nombre || resultado.rfc || "",
           rfc: resultado.rfc,
@@ -395,6 +400,8 @@ export const useHome = () => {
         longitud: location.longitud,
         dispositivo,
         tipoMovimiento: movimientoSeleccionado,
+        fechaHora: fechaHoraMarcaje,
+        FechaHora: fechaHoraMarcaje,
       });
 
       if (response.data) {
