@@ -232,13 +232,13 @@ export const RecibosPage: React.FC = () => {
             <button
               onClick={handleBuscar}
               disabled={loading}
-              className="w-full h-11 sm:h-12 rounded-2xl font-black text-xs sm:text-sm tracking-wide transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full h-14 rounded-2xl font-black text-sm tracking-wide transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/25 active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50"
             >
               {loading ? (
                 <IonSpinner name="crescent" className="w-5 h-5 text-white" />
               ) : (
                 <>
-                  <IonIcon icon={searchOutline} className="text-base" />
+                  <IonIcon icon={searchOutline} className="text-lg" />
                   <span>Buscar Recibos</span>
                 </>
               )}
@@ -340,7 +340,7 @@ export const RecibosPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                    <div className="pt-2 grid grid-cols-2 gap-2.5">
                       <button
                         type="button"
                         disabled={!recibo.tienePdf || isDownloadingPdf}
@@ -352,20 +352,24 @@ export const RecibosPage: React.FC = () => {
                             recibo.nombreArchivo,
                           )
                         }
-                        className="flex-1 h-12 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                        className={`w-full h-14 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
+                          recibo.tienePdf
+                            ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20"
+                            : "bg-slate-100 text-slate-400 border border-slate-200 shadow-none cursor-not-allowed opacity-50"
+                        }`}
                       >
                         {isDownloadingPdf ? (
                           <IonSpinner
                             name="crescent"
-                            className="w-4 h-4 text-blue-600"
+                            className="w-5 h-5 text-white"
                           />
                         ) : (
                           <>
                             <IonIcon
                               icon={documentTextOutline}
-                              className="text-base sm:text-lg shrink-0"
+                              className="text-lg sm:text-xl shrink-0"
                             />
-                            <span>Descargar PDF</span>
+                            <span>{recibo.tienePdf ? "Descargar PDF" : "Sin PDF"}</span>
                           </>
                         )}
                       </button>
@@ -381,20 +385,24 @@ export const RecibosPage: React.FC = () => {
                             recibo.nombreArchivo,
                           )
                         }
-                        className="flex-1 h-12 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                        className={`w-full h-14 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
+                          recibo.tieneXml
+                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20"
+                            : "bg-slate-100 text-slate-400 border border-slate-200 shadow-none cursor-not-allowed opacity-50"
+                        }`}
                       >
                         {isDownloadingXml ? (
                           <IonSpinner
                             name="crescent"
-                            className="w-4 h-4 text-emerald-700"
+                            className="w-5 h-5 text-white"
                           />
                         ) : (
                           <>
                             <IonIcon
                               icon={codeSlashOutline}
-                              className="text-base sm:text-lg shrink-0"
+                              className="text-lg sm:text-xl shrink-0"
                             />
-                            <span>Descargar XML</span>
+                            <span>{recibo.tieneXml ? "Descargar XML" : "Sin XML"}</span>
                           </>
                         )}
                       </button>
