@@ -204,18 +204,6 @@ export const useValidacionMarcaje = (
           turnoHoy = horarioArray[0];
         }
 
-        if (!turnoHoy || !turnoHoy.esLaborable) {
-          setResult({
-            isValido: false,
-            motivoBloqueo: "Día de descanso",
-            mensajeAdvertencia: null,
-            siguienteMovimiento: fallbackMovements,
-            distanciaMetros: distancia ? Math.round(distancia) : null,
-            toleranciaDeadline: null,
-          });
-          return;
-        }
-
         const now = timeService.now();
         let nextMovements: MovimientoPermitido[] = fallbackMovements;
 
@@ -238,7 +226,8 @@ export const useValidacionMarcaje = (
 
         if (
           nextMovements[0] === "ENTRADA" &&
-          turnoHoy.entrada &&
+          turnoHoy?.esLaborable &&
+          turnoHoy?.entrada &&
           nextMovements.length === 1
         ) {
           const entradaTime = parseTimeToDate(turnoHoy.entrada);

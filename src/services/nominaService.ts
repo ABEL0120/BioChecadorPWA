@@ -17,11 +17,13 @@ export const nominaService = {
     compania: number,
     m103: number,
     fechaInicial?: string,
-    fechaFinal?: string
+    fechaFinal?: string,
+    rfcCompania?: string
   ): Promise<ApiResponse<ReciboNomina[]>> => {
     const params = new URLSearchParams();
     if (fechaInicial) params.append("fechaInicial", fechaInicial);
     if (fechaFinal) params.append("fechaFinal", fechaFinal);
+    if (rfcCompania) params.append("rfcCompania", rfcCompania);
 
     const queryString = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<ApiResponse<ReciboNomina[]>>(
@@ -34,10 +36,15 @@ export const nominaService = {
     anio: number,
     proceso: number,
     tipo: "pdf" | "xml",
-    archivo: string
+    archivo: string,
+    rfcCompania?: string
   ): Promise<Blob> => {
+    const params = new URLSearchParams();
+    if (rfcCompania) params.append("rfcCompania", rfcCompania);
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+
     const response = await apiClient.get(
-      `/nomina/descargar/${anio}/${proceso}/${tipo}/${encodeURIComponent(archivo)}`,
+      `/nomina/descargar/${anio}/${proceso}/${tipo}/${encodeURIComponent(archivo)}${queryString}`,
       {
         responseType: "blob",
       }

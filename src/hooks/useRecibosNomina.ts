@@ -13,7 +13,8 @@ export const useRecibosNomina = () => {
       compania: number,
       m103: number,
       fechaInicial?: string,
-      fechaFinal?: string
+      fechaFinal?: string,
+      rfcCompania?: string
     ) => {
       setLoading(true);
       setError(null);
@@ -22,7 +23,8 @@ export const useRecibosNomina = () => {
           compania,
           m103,
           fechaInicial,
-          fechaFinal
+          fechaFinal,
+          rfcCompania
         );
         if (res.success) {
           setRecibos(res.data || []);
@@ -42,7 +44,8 @@ export const useRecibosNomina = () => {
     anio: number,
     proceso: number,
     tipo: "pdf" | "xml",
-    archivo: string
+    archivo: string,
+    rfcCompania?: string
   ): Promise<{ success: boolean; message?: string }> => {
     const key = `${anio}_${proceso}_${tipo}_${archivo}`;
     setDownloadingKey(key);
@@ -51,7 +54,8 @@ export const useRecibosNomina = () => {
         anio,
         proceso,
         tipo,
-        archivo
+        archivo,
+        rfcCompania
       );
 
       const mimeType = tipo === "xml" ? "application/xml" : "application/pdf";

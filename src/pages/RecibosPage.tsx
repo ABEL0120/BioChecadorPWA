@@ -66,9 +66,9 @@ export const RecibosPage: React.FC = () => {
       if (filtrarPorFechas) {
         const fIni = fechaInicial ? fechaInicial.replace(/-/g, "/") : undefined;
         const fFin = fechaFinal ? fechaFinal.replace(/-/g, "/") : undefined;
-        fetchRecibos(user.numeroCompania, user.numeroEmpleado, fIni, fFin);
+        fetchRecibos(user.numeroCompania, user.numeroEmpleado, fIni, fFin, user.rfcCompania);
       } else {
-        fetchRecibos(user.numeroCompania, user.numeroEmpleado);
+        fetchRecibos(user.numeroCompania, user.numeroEmpleado, undefined, undefined, user.rfcCompania);
       }
     }
   }, [user]);
@@ -78,9 +78,9 @@ export const RecibosPage: React.FC = () => {
     if (filtrarPorFechas) {
       const fIni = fechaInicial ? fechaInicial.replace(/-/g, "/") : undefined;
       const fFin = fechaFinal ? fechaFinal.replace(/-/g, "/") : undefined;
-      fetchRecibos(user.numeroCompania, user.numeroEmpleado, fIni, fFin);
+      fetchRecibos(user.numeroCompania, user.numeroEmpleado, fIni, fFin, user.rfcCompania);
     } else {
-      fetchRecibos(user.numeroCompania, user.numeroEmpleado);
+      fetchRecibos(user.numeroCompania, user.numeroEmpleado, undefined, undefined, user.rfcCompania);
     }
   };
 
@@ -91,7 +91,7 @@ export const RecibosPage: React.FC = () => {
     if (user?.numeroCompania && user?.numeroEmpleado) {
       const fIni = getLocalDateStr(firstDayOfYear).replace(/-/g, "/");
       const fFin = getLocalDateStr(now).replace(/-/g, "/");
-      fetchRecibos(user.numeroCompania, user.numeroEmpleado, fIni, fFin);
+      fetchRecibos(user.numeroCompania, user.numeroEmpleado, fIni, fFin, user.rfcCompania);
     }
   };
 
@@ -110,7 +110,7 @@ export const RecibosPage: React.FC = () => {
     tipo: "pdf" | "xml",
     archivo: string,
   ) => {
-    const res = await descargarArchivo(anio, proceso, tipo, archivo);
+    const res = await descargarArchivo(anio, proceso, tipo, archivo, user?.rfcCompania);
     if (!res.success) {
       presentToast({
         message:

@@ -48,6 +48,7 @@ export interface EstadoEmpleadoDto {
   diasMinimoVacaciones?: number;
   minimoVacaciones?: number;
   maximoVacaciones?: number;
+  rfcCompania?: string;
 }
 
 export interface HistoricoAMNDto {
