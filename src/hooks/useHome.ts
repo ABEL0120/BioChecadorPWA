@@ -1,32 +1,55 @@
 import { useState, useEffect, useRef } from "react";
-import { locationService, GpsLocationResult, getDistanceFromLatLonInMeters } from "../services/locationService";
+import {
+  locationService,
+  GpsLocationResult,
+  getDistanceFromLatLonInMeters,
+} from "../services/locationService";
 import { biometricService } from "../services/biometricService";
 import { offlineSyncService } from "../services/offlineSyncService";
 import { timeService } from "../services/timeService";
 import { checadorApi } from "../api/checadorApi";
 import { useAuthSession } from "../context/AuthSessionContext";
-import { useValidacionMarcaje, MovimientoPermitido } from "./useValidacionMarcaje";
+import {
+  useValidacionMarcaje,
+  MovimientoPermitido,
+} from "./useValidacionMarcaje";
 import { formatError } from "../utils/errorHandler";
 import { RegistroChecadaResponseDto } from "../types/api";
+import {
+  isPushSupported,
+  isSubscribed,
+  suscribirNotificaciones,
+  obtenerConfiguracionLocal,
+} from "../services/pushNotificationService";
 
 export const useHome = () => {
   const [rfc, setRfc] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    offlineSyncService.obtenerConfiguracion<string>("last_rfc").then((savedRfc) => {
-      if (savedRfc) {
-        setRfc(savedRfc);
-      }
-    });
+    offlineSyncService
+      .obtenerConfiguracion<string>("last_rfc")
+      .then((savedRfc) => {
+        if (savedRfc) {
+          setRfc(savedRfc);
+        }
+      });
   }, []);
   const [enrolling, setEnrolling] = useState<boolean>(false);
   const [marking, setMarking] = useState<boolean>(false);
   const [showReenrollButton, setShowReenrollButton] = useState<boolean>(false);
   const [fetchingGps, setFetchingGps] = useState<boolean>(false);
-  const [userLocation, setUserLocation] = useState<GpsLocationResult | null>(null);
+  const [userLocation, setUserLocation] = useState<GpsLocationResult | null>(
+    null,
+  );
 
-  const { user: resultado, login, logout, refresh, isLoadingSession } = useAuthSession();
+  const {
+    user: resultado,
+    login,
+    logout,
+    refresh,
+    isLoadingSession,
+  } = useAuthSession();
 
   const watchIdRef = useRef<number | null>(null);
 
@@ -36,8 +59,7 @@ export const useHome = () => {
         (loc) => {
           setUserLocation(loc);
         },
-        (err) => {
-        }
+        (err) => {},
       );
     } else {
       if (watchIdRef.current !== null) {
@@ -51,7 +73,26 @@ export const useHome = () => {
         watchIdRef.current = null;
       }
     };
-  }, [resultado]);
+  }, [resultado?.rfc]);
+
+  useEffect(() => {
+    if (
+      resultado &&
+      resultado.rfc &&
+      resultado.tieneBiometria &&
+      isPushSupported()
+    ) {
+      const currentRfc = resultado.rfc;
+      const config = obtenerConfiguracionLocal();
+      if (
+        Notification.permission === "default" ||
+        (Notification.permission === "granted" && config.activo !== false)
+      ) {
+        const deviceName = biometricService.getDeviceName();
+        suscribirNotificaciones(currentRfc, deviceName).catch(() => {});
+      }
+    }
+  }, [resultado?.rfc, resultado?.tieneBiometria]);
 
   const {
     isValido,
@@ -62,10 +103,11 @@ export const useHome = () => {
     toleranciaDeadline,
   } = useValidacionMarcaje(resultado, userLocation);
 
-  const [registroResult, setRegistroResult] = useState<RegistroChecadaResponseDto | null>(null);
+  const [registroResult, setRegistroResult] =
+    useState<RegistroChecadaResponseDto | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [biometricAvailable, setBiometricAvailable] = useState<boolean>(false);
-  
+
   const [toastState, setToastState] = useState<{
     show: boolean;
     message: string;
@@ -75,7 +117,7 @@ export const useHome = () => {
     message: "",
     color: "danger",
   });
-  
+
   const [alertState, setAlertState] = useState<{
     show: boolean;
     message: string;
@@ -85,9 +127,10 @@ export const useHome = () => {
     message: "",
     title: "",
   });
-  
+
   const [hasPendingOffline, setHasPendingOffline] = useState<boolean>(false);
-  const [hasPendingSolicitud, setHasPendingSolicitud] = useState<boolean>(false);
+  const [hasPendingSolicitud, setHasPendingSolicitud] =
+    useState<boolean>(false);
 
   useEffect(() => {
     const checkPending = async () => {
@@ -95,8 +138,7 @@ export const useHome = () => {
         try {
           const pending = await offlineSyncService.obtenerChecadasPendientes();
           setHasPendingOffline(pending.some((p) => p.rfc === resultado.rfc));
-        } catch (e) {
-        }
+        } catch (e) {}
       } else {
         setHasPendingOffline(false);
       }
@@ -124,14 +166,16 @@ export const useHome = () => {
   useEffect(() => {
     let watchId: number | null = null;
     if (resultado && resultado.trabajoRemoto !== "S") {
-      watchId = locationService.iniciarMonitoreoContinuoAntiTrampa((mensaje) => {
-        setAlertState({
-          show: true,
-          title: "Bloqueo de Seguridad (Anti-Salto)",
-          message: mensaje,
-        });
-        limpiarBusqueda();
-      });
+      watchId = locationService.iniciarMonitoreoContinuoAntiTrampa(
+        (mensaje) => {
+          setAlertState({
+            show: true,
+            title: "Bloqueo de Seguridad (Anti-Salto)",
+            message: mensaje,
+          });
+          limpiarBusqueda();
+        },
+      );
     }
 
     return () => {
@@ -139,7 +183,7 @@ export const useHome = () => {
         locationService.detenerMonitoreoAntiTrampa(watchId);
       }
     };
-  }, [resultado]);
+  }, [resultado?.rfc]);
 
   const handleRefresh = (event: CustomEvent) => {
     biometricService.isPlatformAvailable().then((available) => {
@@ -191,7 +235,7 @@ export const useHome = () => {
       const response = await checadorApi.verificarRfc(cleanRfc, deviceName);
       if (response.success && response.data && response.data.existe) {
         offlineSyncService.guardarConfiguracion("last_rfc", cleanRfc);
-        
+
         // Revisar si ya mandó solicitud recientemente (24h)
         const pendingKey = `solicitud_pendiente_${cleanRfc}`;
         const savedTimestamp = localStorage.getItem(pendingKey);
@@ -216,11 +260,24 @@ export const useHome = () => {
           .obtenerUbicacionActual()
           .then((loc) => setUserLocation(loc))
           .catch(() => {});
+
+        if (response.data.tieneBiometria && isPushSupported()) {
+          const config = obtenerConfiguracionLocal();
+          if (
+            Notification.permission === "default" ||
+            (Notification.permission === "granted" && config.activo !== false)
+          ) {
+            const deviceName = biometricService.getDeviceName();
+            suscribirNotificaciones(cleanRfc, deviceName).catch(() => {});
+          }
+        }
       } else {
         setErrorMsg(response.message || "RFC no encontrado en el sistema.");
       }
     } catch (err: any) {
-      setErrorMsg(formatError(err, "Error al conectar con la API de Reloj Nomina."));
+      setErrorMsg(
+        formatError(err, "Error al conectar con la API de Reloj Nomina."),
+      );
     } finally {
       setLoading(false);
     }
@@ -234,7 +291,7 @@ export const useHome = () => {
     try {
       const biometricData = await biometricService.enrolarBiometriaNativa(
         resultado.rfc,
-        resultado.nombre || ""
+        resultado.nombre || "",
       );
 
       const response = await checadorApi.enrolar({
@@ -248,9 +305,14 @@ export const useHome = () => {
       if (response.success) {
         login({ ...resultado, tieneBiometria: true });
         setShowReenrollButton(false);
-        
+
         localStorage.removeItem(`solicitud_pendiente_${resultado.rfc}`);
         setHasPendingSolicitud(false);
+
+        if (isPushSupported()) {
+          const deviceName = biometricService.getDeviceName();
+          suscribirNotificaciones(resultado.rfc, deviceName).catch(() => {});
+        }
 
         setAlertState({
           show: true,
@@ -276,31 +338,33 @@ export const useHome = () => {
     }
   };
 
-  const handleMarcarAsistencia = async (movimientoSeleccionado: MovimientoPermitido) => {
+  const handleMarcarAsistencia = async (
+    movimientoSeleccionado: MovimientoPermitido,
+  ) => {
     if (!resultado || !resultado.rfc) return;
 
     setMarking(true);
     setRegistroResult(null);
 
     try {
-      let location;
-      setToastState({
-        show: true,
-        message: "Paso 1/2: Obteniendo ubicación (puede demorar)...",
-        color: "primary",
-      });
-      location = await locationService.obtenerUbicacionActual();
-      // } else {
-      //   location = await locationService.obtenerUbicacionAntiTrampa((segs) => {
-      //     setToastState({
-      //       show: true,
-      //       message: `Paso 1/2: Analizando integridad y señal GPS (${segs} seg)...`,
-      //       color: "primary",
-      //     });
-      //   });
-      // }
-
-      setUserLocation(location);
+      let location =
+        userLocation || locationService.getUltimaUbicacionConocida();
+      if (!location) {
+        setToastState({
+          show: true,
+          message: "Paso 1/2: Obteniendo ubicación...",
+          color: "primary",
+        });
+        location = await locationService.obtenerUbicacionActual();
+        setUserLocation(location);
+      } else {
+        locationService
+          .obtenerUbicacionActual()
+          .then((fresh) => {
+            if (fresh) setUserLocation(fresh);
+          })
+          .catch(() => {});
+      }
 
       setToastState({
         show: true,
@@ -337,7 +401,7 @@ export const useHome = () => {
 
       if (biometricAvailable) {
         const authData = await biometricService.autenticarBiometriaNativa(
-          resultado.rfc
+          resultado.rfc,
         );
         credentialId = authData.credentialId;
         dispositivo = authData.dispositivo;
@@ -415,13 +479,17 @@ export const useHome = () => {
           message:
             response.message ||
             `¡Asistencia (${movimientoSeleccionado}) registrada exitosamente!`,
-          title: (response.data.dentroDeRango || resultado.trabajoRemoto === "S") ? "Éxito" : "Fuera de Rango",
+          title:
+            response.data.dentroDeRango || resultado.trabajoRemoto === "S"
+              ? "Éxito"
+              : "Fuera de Rango",
         });
       } else {
         setAlertState({
           show: true,
           message:
-            response.message || "No se pudo registrar el marcaje de asistencia.",
+            response.message ||
+            "No se pudo registrar el marcaje de asistencia.",
           title: "Error",
         });
       }
@@ -434,13 +502,13 @@ export const useHome = () => {
         " " +
         String(err)
       ).toLowerCase();
-      
+
       const msgLower = msg.toLowerCase();
       if (
-        msgLower.includes("ya existe") || 
-        msgLower.includes("ya hay") || 
+        msgLower.includes("ya existe") ||
+        msgLower.includes("ya hay") ||
         msgLower.includes("ya se registr") ||
-        msgLower.includes("ya tienes una") || 
+        msgLower.includes("ya tienes una") ||
         msgLower.includes("no puedes registrar") ||
         msgLower.includes("ya registraste") ||
         msgLower.includes("tienes una") ||
@@ -450,7 +518,9 @@ export const useHome = () => {
         refresh();
         setAlertState({
           show: true,
-          message: msg + " La información de tu estado se ha sincronizado automáticamente.",
+          message:
+            msg +
+            " La información de tu estado se ha sincronizado automáticamente.",
           title: "Aviso",
         });
         setMarking(false);
@@ -499,7 +569,7 @@ export const useHome = () => {
     setUserLocation(null);
     setShowReenrollButton(false);
   };
-  
+
   const [showSolicitudModal, setShowSolicitudModal] = useState<boolean>(false);
   const [motivoSolicitud, setMotivoSolicitud] = useState<string>("");
   const [enviandoSolicitud, setEnviandoSolicitud] = useState<boolean>(false);
@@ -529,7 +599,10 @@ export const useHome = () => {
       });
 
       if (resp.success) {
-        localStorage.setItem(`solicitud_pendiente_${resultado.rfc}`, Date.now().toString());
+        localStorage.setItem(
+          `solicitud_pendiente_${resultado.rfc}`,
+          Date.now().toString(),
+        );
         setHasPendingSolicitud(true);
         setShowSolicitudModal(false);
         setMotivoSolicitud("");
@@ -541,7 +614,10 @@ export const useHome = () => {
         });
       } else {
         if (resp.message?.includes("Ya existe una solicitud pendiente")) {
-          localStorage.setItem(`solicitud_pendiente_${resultado.rfc}`, Date.now().toString());
+          localStorage.setItem(
+            `solicitud_pendiente_${resultado.rfc}`,
+            Date.now().toString(),
+          );
           setHasPendingSolicitud(true);
         }
         setAlertState({
@@ -601,6 +677,6 @@ export const useHome = () => {
     handleSolicitarReinicio,
     enviarSolicitudReinicio,
     limpiarBusqueda,
-    logout
+    logout,
   };
 };

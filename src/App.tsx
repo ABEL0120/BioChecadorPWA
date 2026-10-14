@@ -18,9 +18,12 @@ const HorarioPage = lazy(() => import("./pages/HorarioPage"));
 const HistorialPage = lazy(() => import("./pages/HistorialPage"));
 const SolicitudesPage = lazy(() => import("./pages/SolicitudesPage"));
 const VacacionesScreen = lazy(() =>
-  import("./pages/VacacionesScreen").then((m) => ({ default: m.VacacionesScreen })),
+  import("./pages/VacacionesScreen").then((m) => ({
+    default: m.VacacionesScreen,
+  })),
 );
 const RecibosPage = lazy(() => import("./pages/RecibosPage"));
+const NotificacionesPage = lazy(() => import("./pages/NotificacionesPage"));
 
 const PageLoadingFallback: React.FC = () => (
   <div className="flex h-full w-full items-center justify-center bg-slate-50 min-h-[50vh]">
@@ -70,9 +73,7 @@ function UpdatePrompt() {
         window.addEventListener("focus", checkUpdate);
       }
     },
-    onRegisterError(error) {
-
-    },
+    onRegisterError(error) {},
   });
 
   return (
@@ -132,6 +133,11 @@ const App: React.FC = () => (
               <Route exact path="/recibos">
                 <Suspense fallback={<PageLoadingFallback />}>
                   <RecibosPage />
+                </Suspense>
+              </Route>
+              <Route exact path="/notificaciones">
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <NotificacionesPage />
                 </Suspense>
               </Route>
               <Route exact path="/">

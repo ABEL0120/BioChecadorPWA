@@ -24,221 +24,149 @@ export function getDistanceFromLatLonInMeters(
   return d;
 }
 
-const isWindows = /Windows/.test(navigator.userAgent);
+const isWindows =
+  typeof navigator !== "undefined" && /Windows/.test(navigator.userAgent);
+
+let ultimaUbicacionConocida: GpsLocationResult | null = null;
+let ultimaUbicacionTimestamp = 0;
+
+function guardarUbicacion(pos: GeolocationPosition): GpsLocationResult {
+  const res: GpsLocationResult = {
+    latitud: pos.coords.latitude,
+    longitud: pos.coords.longitude,
+    accuracy: pos.coords.accuracy,
+  };
+  ultimaUbicacionConocida = res;
+  ultimaUbicacionTimestamp = Date.now();
+  return res;
+}
 
 export const locationService = {
+  getUltimaUbicacionConocida: (): GpsLocationResult | null => {
+    return ultimaUbicacionConocida;
+  },
+
   obtenerUbicacionAntiTrampa: (
     onProgress?: (segs: number) => void,
   ): Promise<GpsLocationResult> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(
-          new Error(
-            "Tu navegador o dispositivo no soporta geolocalización GPS.",
-          ),
-        );
-        return;
-      }
-
-      if (isWindows) {
-        if (onProgress) onProgress(0);
-        locationService.obtenerUbicacionActual().then(resolve).catch(reject);
-        return;
-      }
-
-      const points: Array<GpsLocationResult & { timestamp: number }> = [];
-      let rejected = false;
-      let segsLeft = 10;
-
-      if (onProgress) onProgress(segsLeft);
-
-      const intervalId = window.setInterval(() => {
-        segsLeft--;
-        if (onProgress && segsLeft >= 0) onProgress(segsLeft);
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            if (rejected) return;
-            points.push({
-              latitud: position.coords.latitude,
-              longitud: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              timestamp: Date.now(),
-            });
-          },
-          (err) => {
-            // Fallback para PC (Windows) donde High Accuracy suele fallar por falta de hardware GPS
-            navigator.geolocation.getCurrentPosition(
-              (posFallback) => {
-                if (rejected) return;
-                points.push({
-                  latitud: posFallback.coords.latitude,
-                  longitud: posFallback.coords.longitude,
-                  accuracy: posFallback.coords.accuracy,
-                  timestamp: Date.now(),
-                });
-              },
-              () => {},
-              { enableHighAccuracy: false, maximumAge: 0, timeout: 3000 },
-            );
-          },
-          { enableHighAccuracy: !isWindows, maximumAge: 0, timeout: 3000 },
-        );
-      }, 1000);
-
-      setTimeout(() => {
-        if (rejected) return;
-        window.clearInterval(intervalId);
-
-        if (points.length === 0) {
-          reject(
-            new Error(
-              "No se pudo obtener la ubicación GPS tras analizar la señal.",
-            ),
-          );
-          return;
-        }
-
-        /*
-        //Analizamos la velocidad promedio de los ultimos puntos
-        if (points.length > 1) {
-          for (let i = 1; i < points.length; i++) {
-            const p1 = points[i - 1];
-            const p2 = points[i];
-            const distMeters = getDistanceFromLatLonInMeters(
-              p1.latitud,
-              p1.longitud,
-              p2.latitud,
-              p2.longitud,
-            );
-            const timeDiffSecs = (p2.timestamp - p1.timestamp) / 1000;
-            // Solo analizamos la velocidad si hubo un movimiento mayor a 200 metros (para ignorar correcciones naturales del GPS)
-            if (timeDiffSecs > 0 && distMeters > 200) {
-              const speedMetersPerSec = distMeters / timeDiffSecs;
-              const speedKmh = speedMetersPerSec * 3.6;
-              // OJO: VELOCIDAD MAXIMA. Súbele el número si está saltando mucho en tu empresa real.
-              const MAX_SPEED_KMH = 300;
-              if (speedKmh > MAX_SPEED_KMH) {
-                rejected = true;
-                reject(
-                  new Error(
-                    "Se detectó una anomalía en el GPS. Por favor desactiva cualquier Fake GPS.",
-                  ),
-                );
-                return;
-              }
-            }
-          }
-
-          //Analizamos si el usuario no se ha movido mucho efecto ping-pong
-          if (points.length >= 4) {
-            let totalPath = 0;
-            for (let i = 1; i < points.length; i++) {
-              totalPath += getDistanceFromLatLonInMeters(
-                points[i - 1].latitud,
-                points[i - 1].longitud,
-                points[i].latitud,
-                points[i].longitud,
-              );
-            }
-            const netDistance = getDistanceFromLatLonInMeters(
-              points[0].latitud,
-              points[0].longitud,
-              points[points.length - 1].latitud,
-              points[points.length - 1].longitud,
-            );
-            // Súbele el totalPath a 100 y bájale la netDistance si está muy estricto.
-            const MIN_PATH_METERS = 100;
-            const MAX_NET_METERS = 15;
-            if (totalPath > MIN_PATH_METERS && netDistance < MAX_NET_METERS) {
-              rejected = true;
-              reject(
-                new Error(
-                  "Se detectó inestabilidad GPS. Por favor desactiva cualquier Fake GPS.",
-                ),
-              );
-              return;
-            }
-          }
-        */
-        const lastPoint = points[points.length - 1];
-        resolve({
-          latitud: lastPoint.latitud,
-          longitud: lastPoint.longitud,
-          accuracy: lastPoint.accuracy,
-        });
-      }, 10000);
-    });
+    return locationService.obtenerUbicacionActual();
   },
+
   obtenerUbicacionActual: (): Promise<GpsLocationResult> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
+        if (ultimaUbicacionConocida) {
+          resolve(ultimaUbicacionConocida);
+          return;
+        }
         reject(
           new Error(
             "Tu navegador o dispositivo no soporta geolocalización GPS.",
           ),
+        );
+        return;
+      }
+
+      const ahora = Date.now();
+      if (
+        ultimaUbicacionConocida &&
+        ahora - ultimaUbicacionTimestamp < 180000
+      ) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => resolve(guardarUbicacion(position)),
+          () => resolve(ultimaUbicacionConocida!),
+          {
+            enableHighAccuracy: false,
+            timeout: 3000,
+            maximumAge: 60000,
+          },
         );
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          resolve({
-            latitud: position.coords.latitude,
-            longitud: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-          });
+          resolve(guardarUbicacion(position));
         },
         (error) => {
-          let mensaje = "No se pudo obtener la ubicación GPS.";
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              mensaje =
-                "Permiso de ubicación denegado. Para activarlo, toca el ícono del candado en la barra de direcciones, entra a 'Permisos', permite la Ubicación y recarga la página.";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              mensaje =
-                "Información de ubicación no disponible. Verifica que tu GPS esté encendido.";
-              break;
-            case error.TIMEOUT:
-              mensaje = "Tiempo de espera agotado al consultar el GPS.";
-              break;
+          if (ultimaUbicacionConocida) {
+            resolve(ultimaUbicacionConocida);
+            return;
           }
-          reject(new Error(mensaje));
+
+          navigator.geolocation.getCurrentPosition(
+            (posFallback) => {
+              resolve(guardarUbicacion(posFallback));
+            },
+            (errFallback) => {
+              let mensaje = "No se pudo obtener la ubicación GPS.";
+              switch (errFallback.code) {
+                case errFallback.PERMISSION_DENIED:
+                  mensaje =
+                    "Permiso de ubicación denegado. Permite la Ubicación en los ajustes del sitio o navegador.";
+                  break;
+                case errFallback.POSITION_UNAVAILABLE:
+                  mensaje =
+                    "Información de ubicación no disponible. Verifica que tu GPS o red esté encendida.";
+                  break;
+                case errFallback.TIMEOUT:
+                  mensaje = "Tiempo de espera agotado al consultar el GPS.";
+                  break;
+              }
+              reject(new Error(mensaje));
+            },
+            {
+              enableHighAccuracy: false,
+              timeout: 6000,
+              maximumAge: 30000,
+            },
+          );
         },
         {
           enableHighAccuracy: !isWindows,
-          timeout: isWindows ? 60000 : 15000,
-          maximumAge: isWindows ? 60000 : 15000,
+          timeout: 8000,
+          maximumAge: 30000,
         },
       );
     });
   },
+
   seguirUbicacionActual: (
     onSuccess: (loc: GpsLocationResult) => void,
     onError: (err: Error) => void,
   ): number | null => {
     if (!navigator.geolocation) {
-      onError(
-        new Error("Tu navegador o dispositivo no soporta geolocalización GPS."),
-      );
+      if (ultimaUbicacionConocida) {
+        onSuccess(ultimaUbicacionConocida);
+      } else {
+        onError(
+          new Error(
+            "Tu navegador o dispositivo no soporta geolocalización GPS.",
+          ),
+        );
+      }
       return null;
+    }
+
+    if (ultimaUbicacionConocida) {
+      onSuccess(ultimaUbicacionConocida);
     }
 
     return navigator.geolocation.watchPosition(
       (position) => {
-        onSuccess({
-          latitud: position.coords.latitude,
-          longitud: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        });
+        const res = guardarUbicacion(position);
+        onSuccess(res);
       },
       (error) => {
+        if (ultimaUbicacionConocida) {
+          onSuccess(ultimaUbicacionConocida);
+          return;
+        }
         let mensaje = "No se pudo obtener la ubicación GPS.";
         switch (error.code) {
           case error.PERMISSION_DENIED:
             mensaje =
-              "Permiso de ubicación denegado. Para activarlo, toca el ícono del candado en la barra de direcciones, permite la Ubicación y recarga.";
+              "Permiso de ubicación denegado. Para activarlo, permite la Ubicación en el navegador.";
             break;
           case error.POSITION_UNAVAILABLE:
             mensaje =
@@ -252,71 +180,24 @@ export const locationService = {
       },
       {
         enableHighAccuracy: !isWindows,
-        timeout: 15000,
-        maximumAge: 15000,
+        timeout: 10000,
+        maximumAge: 30000,
       },
     );
   },
+
   iniciarMonitoreoContinuoAntiTrampa: (
     onAnomalyDetected: (mensaje: string) => void,
   ): number | null => {
-    if (!navigator.geolocation) return null;
-
-    const points: Array<GpsLocationResult & { timestamp: number }> = [];
-    const intervalId = window.setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const now = Date.now();
-          points.push({
-            latitud: position.coords.latitude,
-            longitud: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: now,
-          });
-
-          if (points.length > 5) points.shift();
-
-          /*
-          if (points.length > 1) {
-            // 1. Detección de saltos bruscos (Rubber-banding) estrictamente
-            const p1 = points[points.length - 2];
-            const p2 = points[points.length - 1];
-            const distMeters = getDistanceFromLatLonInMeters(
-              p1.latitud,
-              p1.longitud,
-              p2.latitud,
-              p2.longitud,
-            );
-            const timeDiffSecs = (p2.timestamp - p1.timestamp) / 1000;
-
-            // Solo analizamos velocidad si el salto fue mayor a 200 metros
-            if (timeDiffSecs > 0 && distMeters > 200) {
-              const speedMetersPerSec = distMeters / timeDiffSecs;
-              const speedKmh = speedMetersPerSec * 3.6;
-
-              // 300 km/h es imposible para una persona. Si salta así de rápido y más de 200m, es Fake GPS.
-              if (speedKmh > 300) {
-                onAnomalyDetected(
-                  "Se ha detectado un salto GPS malicioso. Tu sesión será cerrada.",
-                );
-                return;
-              }
-            }
-          }
-          */
-        },
-        () => {},
-        { enableHighAccuracy: !isWindows, maximumAge: 0, timeout: 5000 },
-      );
-    }, 1000);
-
-    return intervalId as unknown as number;
+    return null;
   },
+
   detenerSeguimiento: (watchId: number) => {
     if (watchId !== null) {
       navigator.geolocation.clearWatch(watchId);
     }
   },
+
   detenerMonitoreoAntiTrampa: (intervalId: number) => {
     if (intervalId !== null) {
       window.clearInterval(intervalId);

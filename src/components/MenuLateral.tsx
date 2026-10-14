@@ -22,6 +22,7 @@ import {
   mailOpenOutline,
   airplaneOutline,
   receiptOutline,
+  notificationsOutline,
 } from "ionicons/icons";
 import { useLocation } from "react-router-dom";
 import { useAuthSession } from "../context/AuthSessionContext";
@@ -124,6 +125,11 @@ export const MenuLateral: React.FC = () => {
       title: "Recibos de Nómina",
       url: "/recibos",
       icon: receiptOutline,
+    },
+    {
+      title: "Recordatorios",
+      url: "/notificaciones",
+      icon: notificationsOutline,
     },
   ];
 
