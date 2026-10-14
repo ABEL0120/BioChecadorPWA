@@ -52,25 +52,10 @@ export const useNotificaciones = () => {
       const sub = await isSubscribed();
       setActivo(sub);
       setLoading(false);
-
-      if (user?.rfc && user?.tieneBiometria && isSupp && perm === "granted") {
-        if (!sub) {
-          const dispositivo = biometricService.getDeviceName();
-          suscribirNotificaciones(user.rfc, dispositivo)
-            .then(async (res) => {
-              if (res.success) {
-                setActivo(true);
-                const updatedPerm = await obtenerPermisoNotificacionesReal();
-                setPermiso(updatedPerm);
-              }
-            })
-            .catch(() => {});
-        }
-      }
     } catch {
       setLoading(false);
     }
-  }, [user?.rfc, user?.tieneBiometria]);
+  }, []);
 
   useIonViewWillEnter(() => {
     checkState();
