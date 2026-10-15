@@ -22,6 +22,11 @@ const VacacionesScreen = lazy(() =>
     default: m.VacacionesScreen,
   })),
 );
+const PermisosScreen = lazy(() =>
+  import("./pages/PermisosScreen").then((m) => ({
+    default: m.PermisosScreen,
+  })),
+);
 const RecibosPage = lazy(() => import("./pages/RecibosPage"));
 const NotificacionesPage = lazy(() => import("./pages/NotificacionesPage"));
 
@@ -128,6 +133,11 @@ const App: React.FC = () => (
               <Route exact path="/vacaciones">
                 <Suspense fallback={<PageLoadingFallback />}>
                   <VacacionesScreen />
+                </Suspense>
+              </Route>
+              <Route exact path="/permisos">
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <PermisosScreen />
                 </Suspense>
               </Route>
               <Route exact path="/recibos">

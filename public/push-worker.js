@@ -13,14 +13,15 @@ self.addEventListener("push", (event) => {
     body: data.body || "Es hora de registrar tu asistencia.",
     icon: data.icon || "/pwa-192x192-v2.png",
     badge: data.badge || "/pwa-192x192-v2.png",
-    vibrate: [200, 100, 200],
+    vibrate: data.vibrate || [250, 100, 250],
     data: {
       url: data.url || "/home",
       ...data.data,
     },
     actions: data.actions || [],
-    tag: data.tag || "reloj-asistencia-tag",
+    tag: data.tag || ("reloj-" + Date.now()),
     renotify: true,
+    requireInteraction: data.requireInteraction ?? false,
   };
 
   event.waitUntil(self.registration.showNotification(title, options));

@@ -37,6 +37,7 @@ interface Props {
   hasPendingOffline: boolean;
   hasPendingSolicitud: boolean;
   toleranciaDeadline?: Date | null;
+  cooldownSeconds?: number;
 }
 
 const getMovementIcon = (mov: string) => {
@@ -62,6 +63,7 @@ export const PanelMarcaje: React.FC<Props> = ({
   hasPendingOffline,
   hasPendingSolicitud,
   toleranciaDeadline,
+  cooldownSeconds = 0,
 }) => {
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
@@ -143,13 +145,15 @@ export const PanelMarcaje: React.FC<Props> = ({
             {siguienteMovimiento.map((mov) => (
               <button
                 key={mov}
-                disabled={marking || hasPendingOffline || !isValido}
+                disabled={marking || hasPendingOffline || !isValido || cooldownSeconds > 0}
                 onClick={() => handleMarcarAsistencia(mov)}
                 className={`w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
                   hasPendingOffline
                     ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                     : !isValido
                     ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                    : cooldownSeconds > 0
+                    ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none"
                     : mov.includes("COMIDA")
                     ? "bg-orange-500 text-white hover:bg-orange-600 shadow-md hover:shadow-lg hover:shadow-orange-200 active:scale-[0.98]"
                     : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg hover:shadow-emerald-200 active:scale-[0.98]"
@@ -166,6 +170,11 @@ export const PanelMarcaje: React.FC<Props> = ({
                   <>
                     <IonIcon icon={lockClosedOutline} className="text-xl" />
                     <span>Bloqueado</span>
+                  </>
+                ) : cooldownSeconds > 0 ? (
+                  <>
+                    <IonIcon icon={timeOutline} className="text-xl text-slate-400" />
+                    <span>Espera {cooldownSeconds}s</span>
                   </>
                 ) : (
                   <>

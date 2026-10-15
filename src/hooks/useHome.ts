@@ -131,6 +131,40 @@ export const useHome = () => {
   const [hasPendingOffline, setHasPendingOffline] = useState<boolean>(false);
   const [hasPendingSolicitud, setHasPendingSolicitud] =
     useState<boolean>(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    if (!resultado?.rfc) {
+      setCooldownSeconds(0);
+      return;
+    }
+
+    const checkCooldown = () => {
+      const stored = localStorage.getItem(`checador_cooldown_${resultado.rfc}`);
+      if (!stored) {
+        setCooldownSeconds(0);
+        return;
+      }
+      const until = parseInt(stored, 10);
+      const remaining = Math.ceil((until - Date.now()) / 1000);
+      if (remaining > 0) {
+        setCooldownSeconds(remaining);
+      } else {
+        localStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
+        setCooldownSeconds(0);
+      }
+    };
+
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 1000);
+    return () => clearInterval(interval);
+  }, [resultado?.rfc]);
+
+  const iniciarCooldownMarcaje = (rfcStr: string) => {
+    const until = Date.now() + 60 * 1000;
+    localStorage.setItem(`checador_cooldown_${rfcStr}`, until.toString());
+    setCooldownSeconds(60);
+  };
 
   useEffect(() => {
     const checkPending = async () => {
@@ -342,6 +376,7 @@ export const useHome = () => {
     movimientoSeleccionado: MovimientoPermitido,
   ) => {
     if (!resultado || !resultado.rfc) return;
+    if (cooldownSeconds > 0) return;
 
     setMarking(true);
     setRegistroResult(null);
@@ -444,6 +479,7 @@ export const useHome = () => {
           empresa: resultado.razonSocial || "Tu Empresa",
         });
         setHasPendingOffline(true);
+        iniciarCooldownMarcaje(resultado.rfc);
         login({
           ...resultado,
           ultimoMovimientoHoy: movimientoSeleccionado,
@@ -469,6 +505,7 @@ export const useHome = () => {
       });
 
       if (response.data) {
+        iniciarCooldownMarcaje(resultado.rfc);
         setRegistroResult(response.data);
         login({
           ...resultado,
@@ -677,6 +714,7 @@ export const useHome = () => {
     handleSolicitarReinicio,
     enviarSolicitudReinicio,
     limpiarBusqueda,
+    cooldownSeconds,
     logout,
   };
 };

@@ -5,6 +5,7 @@ import {
   warningOutline,
   lockClosedOutline,
   fingerPrintOutline,
+  timeOutline,
 } from "ionicons/icons";
 import { MovimientoPermitido } from "../hooks/useValidacionMarcaje";
 
@@ -20,6 +21,7 @@ interface InfoEmpleadoProps {
   hasPendingOffline: boolean;
   siguienteMovimiento: MovimientoPermitido[];
   enrolling: boolean;
+  cooldownSeconds: number;
   handleMarcarAsistencia: (movimientoSeleccionado: MovimientoPermitido) => void;
   handleEnrolarBiometria: () => void;
   formatMovementLabel: (mov?: string) => string;
@@ -37,6 +39,7 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
   hasPendingOffline,
   siguienteMovimiento,
   enrolling,
+  cooldownSeconds,
   handleMarcarAsistencia,
   handleEnrolarBiometria,
   formatMovementLabel,
@@ -128,13 +131,15 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
           siguienteMovimiento.map((mov) => (
             <button
               key={mov}
-              disabled={marking || hasPendingOffline || !isValido}
+              disabled={marking || hasPendingOffline || !isValido || cooldownSeconds > 0}
               onClick={() => handleMarcarAsistencia(mov)}
               className={`w-full h-16 rounded-[20px] font-black text-lg tracking-wide transition-all duration-300 flex items-center justify-center gap-3 ${
                 hasPendingOffline
                   ? "bg-slate-200 text-slate-500 border border-slate-300"
                   : !isValido
                     ? "bg-slate-100 text-slate-400 border border-slate-200"
+                    : cooldownSeconds > 0
+                    ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none"
                     : mov.includes("COMIDA")
                     ? "bg-orange-500 text-white hover:bg-orange-600 shadow-xl shadow-orange-200/50 active:scale-[0.98]"
                     : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
@@ -149,6 +154,14 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
                     className="text-2xl shrink-0"
                   />
                   <span>Bloqueado</span>
+                </>
+              ) : cooldownSeconds > 0 ? (
+                <>
+                  <IonIcon
+                    icon={timeOutline}
+                    className="text-2xl shrink-0 text-slate-400"
+                  />
+                  <span>Espera {cooldownSeconds}s</span>
                 </>
               ) : (
                 <>

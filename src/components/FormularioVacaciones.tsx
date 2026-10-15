@@ -14,6 +14,9 @@ import {
   personOutline,
   closeCircleOutline,
   createOutline,
+  calendarOutline,
+  chevronDownOutline,
+  chevronUpOutline,
 } from "ionicons/icons";
 import { MiniCalendario } from "./MiniCalendario";
 import { useAuthSession } from "../context/AuthSessionContext";
@@ -170,12 +173,14 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
   const [fechaInicio, setFechaInicio] = useState("");
   const [comentariosEmpleado, setComentariosEmpleado] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mostrarCalendario, setMostrarCalendario] = useState<boolean>(false);
 
   const numDias = Number(diasSolicitados) || 0;
   const diasExcedentes = Math.max(0, numDias - diasDisponibles);
 
   const getPeriodoSiguiente = (p: string): string => {
-    if (calculoFechas?.periodoAnticipado) return calculoFechas.periodoAnticipado;
+    if (calculoFechas?.periodoAnticipado)
+      return calculoFechas.periodoAnticipado;
     const matchRange = p.match(/^(\d{4})\s*-\s*(\d{4})$/);
     if (matchRange) {
       const y1 = parseInt(matchRange[1], 10) + 1;
@@ -572,7 +577,8 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
                   : ""}
                 . Los{" "}
                 <span className="font-black text-amber-950">
-                  {numDias} {numDias === 1 ? "día solicitado" : "días solicitados"}
+                  {numDias}{" "}
+                  {numDias === 1 ? "día solicitado" : "días solicitados"}
                 </span>{" "}
                 se tomarán por anticipado del siguiente periodo{" "}
                 <span className="font-black text-amber-950">
@@ -582,11 +588,13 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
               </p>
             ) : (
               <p>
-                De los {numDias} días solicitados, {diasDisponibles} se cubrirán con
-                tu periodo actual{periodo ? ` (${periodo})` : ""}. Los{" "}
+                De los {numDias} días solicitados, {diasDisponibles} se cubrirán
+                con tu periodo actual{periodo ? ` (${periodo})` : ""}. Los{" "}
                 <span className="font-black text-amber-950">
                   {diasAnticipadosFinal}{" "}
-                  {diasAnticipadosFinal === 1 ? "día restante" : "días restantes"}
+                  {diasAnticipadosFinal === 1
+                    ? "día restante"
+                    : "días restantes"}
                 </span>{" "}
                 se tomarán por anticipado del siguiente periodo{" "}
                 <span className="font-black text-amber-950">
@@ -607,15 +615,64 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
       )}
 
       {calculoFechas && (
-        <MiniCalendario
-          fechaInicio={fechaInicio}
-          fechaFin={calculoFechas.fechaFin}
-          fechaRetorno={calculoFechas.fechaRetorno}
-          diasEfectivos={calculoFechas.diasEfectivos}
-          diasInhabiles={calculoFechas.diasInhabiles}
-          diasRestringidos={datosIniciales.fechasRestringidas}
-          inicioSemana={inicioSemana}
-        />
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={() => setMostrarCalendario(!mostrarCalendario)}
+            className={`w-full p-3 sm:p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between gap-3 ${
+              mostrarCalendario
+                ? "bg-white border-blue-200 shadow-xs ring-1 ring-blue-500/10"
+                : "bg-slate-50 hover:bg-slate-100/80 border-slate-200/80"
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  mostrarCalendario
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-blue-100 text-blue-600"
+                }`}
+              >
+                <IonIcon icon={calendarOutline} className="text-base" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-xs sm:text-sm font-bold text-slate-800 block">
+                  Ver días en el calendario
+                </span>
+                <p className="text-[11px] text-slate-400 font-medium truncate">
+                  {numDias}{" "}
+                  {numDias === 1 ? "día de vacaciones" : "días de vacaciones"}
+                  {calculoFechas.fechaRetorno
+                    ? ` · Regreso el ${calculoFechas.fechaRetorno}`
+                    : ""}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <IonIcon
+                icon={mostrarCalendario ? chevronUpOutline : chevronDownOutline}
+                className={`text-base transition-colors ${
+                  mostrarCalendario ? "text-blue-600" : "text-slate-400"
+                }`}
+              />
+            </div>
+          </button>
+
+          {mostrarCalendario && (
+            <div className="mt-2">
+              <MiniCalendario
+                fechaInicio={fechaInicio}
+                fechaFin={calculoFechas.fechaFin}
+                fechaRetorno={calculoFechas.fechaRetorno}
+                diasEfectivos={calculoFechas.diasEfectivos}
+                diasInhabiles={calculoFechas.diasInhabiles}
+                diasRestringidos={datosIniciales.fechasRestringidas}
+                inicioSemana={inicioSemana}
+              />
+            </div>
+          )}
+        </div>
       )}
 
       <div className="min-w-0">

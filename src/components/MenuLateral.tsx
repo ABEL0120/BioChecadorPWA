@@ -23,6 +23,7 @@ import {
   airplaneOutline,
   receiptOutline,
   notificationsOutline,
+  documentTextOutline,
 } from "ionicons/icons";
 import { useLocation } from "react-router-dom";
 import { useAuthSession } from "../context/AuthSessionContext";
@@ -120,6 +121,11 @@ export const MenuLateral: React.FC = () => {
       title: "Vacaciones",
       url: "/vacaciones",
       icon: airplaneOutline,
+    },
+    {
+      title: "Permisos",
+      url: "/permisos",
+      icon: documentTextOutline,
     },
     {
       title: "Recibos de Nómina",

@@ -193,15 +193,23 @@ export const suscribirNotificaciones = async (
     const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
 
-    if (!subscription) {
-      const publicKey =
-        import.meta.env.VITE_VAPID_PUBLIC_KEY || DEFAULT_VAPID_PUBLIC_KEY;
-      const convertedKey = urlBase64ToUint8Array(publicKey);
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: convertedKey as unknown as BufferSource,
-      });
+    const publicKey =
+      import.meta.env.VITE_VAPID_PUBLIC_KEY || DEFAULT_VAPID_PUBLIC_KEY;
+    const convertedKey = urlBase64ToUint8Array(publicKey);
+
+    // Si ya existe una suscripción (podría estar expirada o desincronizada con FCM), renovarla limpiamente
+    if (subscription) {
+      try {
+        await subscription.unsubscribe();
+      } catch (unsubErr) {
+        console.warn("Aviso al renovar suscripción anterior:", unsubErr);
+      }
     }
+
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedKey as unknown as BufferSource,
+    });
 
     const payload = {
       rfc,
@@ -311,3 +319,28 @@ export const probarNotificacionLocal = async (
     return false;
   }
 };
+
+export const probarNotificacionRemota = async (
+  rfc: string,
+  dispositivo: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const res = await apiClient.post("/notificaciones/probar", {
+      rfc,
+      dispositivo,
+    });
+    return {
+      success: res.data?.success ?? true,
+      message: res.data?.message || "Notificación enviada correctamente.",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message:
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error al enviar notificación de prueba.",
+    };
+  }
+};
+

@@ -10,6 +10,7 @@ interface MiniCalendarioProps {
   diasInhabiles?: string[];
   diasRestringidos?: string[];
   inicioSemana?: number;
+  labelEfectivos?: string;
 }
 
 export const MiniCalendario: React.FC<MiniCalendarioProps> = ({
@@ -20,6 +21,7 @@ export const MiniCalendario: React.FC<MiniCalendarioProps> = ({
   diasInhabiles,
   diasRestringidos,
   inicioSemana = 0,
+  labelEfectivos = "Vacaciones",
 }) => {
   if (!fechaInicio || !fechaFin || !fechaRetorno) return null;
 
@@ -173,7 +175,7 @@ export const MiniCalendario: React.FC<MiniCalendarioProps> = ({
       <div className="mt-4 flex flex-wrap gap-2.5 sm:gap-3 justify-center text-[10px] font-bold text-slate-500">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-          <span>Vacaciones</span>
+          <span>{labelEfectivos}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 bg-slate-200 rounded-sm border border-slate-300"></div>
@@ -183,10 +185,12 @@ export const MiniCalendario: React.FC<MiniCalendarioProps> = ({
           <div className="w-3 h-3 bg-emerald-500 rounded-sm"></div>
           <span>Regreso</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-red-500 rounded-sm"></div>
-          <span>Restringido</span>
-        </div>
+        {diasRestringidos && diasRestringidos.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-red-500 rounded-sm"></div>
+            <span>Restringido</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -207,18 +207,6 @@ export const useValidacionMarcaje = (
         const now = timeService.now();
         let nextMovements: MovimientoPermitido[] = fallbackMovements;
 
-        if (ultimo === "SALIDA") {
-          setResult({
-            isValido: false,
-            motivoBloqueo: "Jornada terminada por hoy",
-            mensajeAdvertencia: null,
-            siguienteMovimiento: ["ENTRADA"],
-            distanciaMetros: distancia ? Math.round(distancia) : null,
-            toleranciaDeadline: null,
-          });
-          return;
-        }
-
         let isValido = true;
         let motivoBloqueoFinal: string | null = null;
         let mensajeAdvertenciaFinal: string | null = null;
@@ -233,28 +221,6 @@ export const useValidacionMarcaje = (
           const entradaTime = parseTimeToDate(turnoHoy.entrada);
           const diffMinutes = (now.getTime() - entradaTime.getTime()) / 60000;
           const tolerancia = turnoHoy.toleranciaEntradaMinutos || 0;
-
-          // Restricciones de horario (marcar muy tarde o muy temprano)
-          /*
-          let blockEntrada = false;
-          if (turnoHoy.salida) {
-            const salidaTime = parseTimeToDate(turnoHoy.salida);
-            if (now.getTime() > salidaTime.getTime()) {
-              isValido = false;
-              motivoBloqueoFinal =
-                "Jornada laboral finalizada. No puedes registrar entrada.";
-              blockEntrada = true;
-            }
-          }
-
-          if (!blockEntrada) {
-            if (diffMinutes < -30) {
-              isValido = false;
-              motivoBloqueoFinal = "Muy temprano (Permitido 30 min antes)";
-            }
-          }
-          */
-
           if (diffMinutes >= 0 && diffMinutes <= tolerancia && tolerancia > 0) {
             currentToleranciaDeadline = new Date(
               entradaTime.getTime() + tolerancia * 60000,

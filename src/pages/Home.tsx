@@ -77,6 +77,7 @@ export const Home: React.FC = () => {
     motivoSolicitud,
     setMotivoSolicitud,
     enviandoSolicitud,
+    cooldownSeconds,
   } = useHome();
 
   const currentTime = useReloj();
@@ -154,6 +155,7 @@ export const Home: React.FC = () => {
                 hasPendingOffline={hasPendingOffline}
                 siguienteMovimiento={siguienteMovimiento}
                 enrolling={enrolling}
+                cooldownSeconds={cooldownSeconds}
                 handleMarcarAsistencia={handleMarcarAsistencia}
                 handleEnrolarBiometria={handleEnrolarBiometria}
                 formatMovementLabel={formatMovementLabel}
