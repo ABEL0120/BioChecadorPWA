@@ -38,13 +38,6 @@ export const Home: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const formatMovementLabel = (mov?: string) => {
-    if (!mov) return "CARGANDO...";
-    if (mov === "SALIDA_COMIDA") return "SALIDA A COMER";
-    if (mov === "ENTRADA_COMIDA") return "REGRESO DE COMER";
-    return mov;
-  };
-
   const {
     rfc,
     setRfc,
@@ -81,6 +74,21 @@ export const Home: React.FC = () => {
   } = useHome();
 
   const currentTime = useReloj();
+
+  const formatMovementLabel = (mov?: string) => {
+    if (!mov) return "CARGANDO...";
+    if (mov === "SALIDA_COMIDA") return "SALIDA A COMER";
+    if (mov === "ENTRADA_COMIDA") return "REGRESO DE COMER";
+    if (mov === "ENTRADA") {
+      const yaHaySalida = Boolean(
+        resultado?.tieneSalidaHoy ||
+        (resultado?.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA" ||
+        (resultado?.ultimoMovimientoHoy || "").toUpperCase().includes("SALIDA"),
+      );
+      if (yaHaySalida) return "VOLVER A ENTRAR";
+    }
+    return mov;
+  };
 
 
   return (

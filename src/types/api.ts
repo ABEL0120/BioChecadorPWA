@@ -40,6 +40,7 @@ export interface EstadoEmpleadoDto {
   longitudEmpresa?: number;
   radioToleranciaMetros?: number;
   ultimoMovimientoHoy?: string;
+  tieneSalidaHoy?: boolean;
   horario?: HorarioDto | TurnoDetalleDto[];
   trabajoRemoto?: string;
   numeroEmpleado?: number;

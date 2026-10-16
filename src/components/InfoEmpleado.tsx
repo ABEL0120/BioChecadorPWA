@@ -131,30 +131,18 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
           siguienteMovimiento.map((mov) => (
             <button
               key={mov}
-              disabled={marking || hasPendingOffline || !isValido || cooldownSeconds > 0}
+              disabled={marking || cooldownSeconds > 0}
               onClick={() => handleMarcarAsistencia(mov)}
               className={`w-full h-16 rounded-[20px] font-black text-lg tracking-wide transition-all duration-300 flex items-center justify-center gap-3 ${
-                hasPendingOffline
-                  ? "bg-slate-200 text-slate-500 border border-slate-300"
-                  : !isValido
-                    ? "bg-slate-100 text-slate-400 border border-slate-200"
-                    : cooldownSeconds > 0
-                    ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none"
-                    : mov.includes("COMIDA")
-                    ? "bg-orange-500 text-white hover:bg-orange-600 shadow-xl shadow-orange-200/50 active:scale-[0.98]"
-                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
+                marking || cooldownSeconds > 0
+                  ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                  : mov.includes("COMIDA")
+                  ? "bg-orange-500 text-white hover:bg-orange-600 shadow-xl shadow-orange-200/50 active:scale-[0.98]"
+                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
               }`}
             >
               {marking ? (
                 <IonSpinner name="crescent" className="w-6 h-6 text-current" />
-              ) : !isValido ? (
-                <>
-                  <IonIcon
-                    icon={lockClosedOutline}
-                    className="text-2xl shrink-0"
-                  />
-                  <span>Bloqueado</span>
-                </>
               ) : cooldownSeconds > 0 ? (
                 <>
                   <IonIcon
@@ -169,7 +157,17 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
                     icon={fingerPrintOutline}
                     className="text-2xl shrink-0"
                   />
-                  <span>Marcar {formatMovementLabel(mov)}</span>
+                  <span>
+                    {mov === "ENTRADA" &&
+                    (resultado?.tieneSalidaHoy ||
+                      (resultado?.ultimoMovimientoHoy || "").toUpperCase() ===
+                        "SALIDA" ||
+                      (resultado?.ultimoMovimientoHoy || "")
+                        .toUpperCase()
+                        .includes("SALIDA"))
+                      ? "Volver a entrar"
+                      : `Marcar ${formatMovementLabel(mov)}`}
+                  </span>
                 </>
               )}
             </button>

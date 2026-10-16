@@ -139,31 +139,45 @@ export const useHome = () => {
       return;
     }
 
-    const checkCooldown = () => {
-      const stored = localStorage.getItem(`checador_cooldown_${resultado.rfc}`);
-      if (!stored) {
-        setCooldownSeconds(0);
-        return;
-      }
-      const until = parseInt(stored, 10);
+    const key = `checador_cooldown_${resultado.rfc}`;
+    const storedUntil = localStorage.getItem(key);
+    if (storedUntil) {
+      const until = parseInt(storedUntil, 10);
       const remaining = Math.ceil((until - Date.now()) / 1000);
       if (remaining > 0) {
         setCooldownSeconds(remaining);
       } else {
-        localStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
+        localStorage.removeItem(key);
         setCooldownSeconds(0);
       }
-    };
-
-    checkCooldown();
-    const interval = setInterval(checkCooldown, 1000);
-    return () => clearInterval(interval);
+    } else {
+      setCooldownSeconds(0);
+    }
   }, [resultado?.rfc]);
 
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) {
+          if (resultado?.rfc) {
+            localStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldownSeconds, resultado?.rfc]);
+
   const iniciarCooldownMarcaje = (rfcStr: string) => {
-    const until = Date.now() + 60 * 1000;
+    const totalSegundos = 60;
+    const until = Date.now() + totalSegundos * 1000;
     localStorage.setItem(`checador_cooldown_${rfcStr}`, until.toString());
-    setCooldownSeconds(60);
+    setCooldownSeconds(totalSegundos);
   };
 
   useEffect(() => {
@@ -196,28 +210,6 @@ export const useHome = () => {
       setBiometricAvailable(available);
     });
   }, []);
-
-  useEffect(() => {
-    let watchId: number | null = null;
-    if (resultado && resultado.trabajoRemoto !== "S") {
-      watchId = locationService.iniciarMonitoreoContinuoAntiTrampa(
-        (mensaje) => {
-          setAlertState({
-            show: true,
-            title: "Bloqueo de Seguridad (Anti-Salto)",
-            message: mensaje,
-          });
-          limpiarBusqueda();
-        },
-      );
-    }
-
-    return () => {
-      if (watchId !== null) {
-        locationService.detenerMonitoreoAntiTrampa(watchId);
-      }
-    };
-  }, [resultado?.rfc]);
 
   const handleRefresh = (event: CustomEvent) => {
     biometricService.isPlatformAvailable().then((available) => {
@@ -376,22 +368,29 @@ export const useHome = () => {
     movimientoSeleccionado: MovimientoPermitido,
   ) => {
     if (!resultado || !resultado.rfc) return;
-    if (cooldownSeconds > 0) return;
-
     setMarking(true);
     setRegistroResult(null);
 
     try {
-      let location =
-        userLocation || locationService.getUltimaUbicacionConocida();
-      if (!location) {
-        setToastState({
-          show: true,
-          message: "Paso 1/2: Obteniendo ubicación...",
-          color: "primary",
-        });
-        location = await locationService.obtenerUbicacionActual();
-        setUserLocation(location);
+      let location: GpsLocationResult =
+        userLocation ||
+        locationService.getUltimaUbicacionConocida() || {
+          latitud: 0,
+          longitud: 0,
+          accuracy: 0,
+        };
+
+      if (!userLocation && !locationService.getUltimaUbicacionConocida()) {
+        try {
+          const fresh = await locationService.obtenerUbicacionActual();
+          if (fresh) {
+            location = fresh;
+            setUserLocation(fresh);
+          }
+        } catch {
+          // Si el GPS no responde o no hay permisos, no bloquear la checada
+          location = { latitud: 0, longitud: 0, accuracy: 0 };
+        }
       } else {
         locationService
           .obtenerUbicacionActual()
@@ -480,9 +479,16 @@ export const useHome = () => {
         });
         setHasPendingOffline(true);
         iniciarCooldownMarcaje(resultado.rfc);
+        const huboSalidaOffline =
+          Boolean(resultado.tieneSalidaHoy) ||
+          movimientoSeleccionado === "SALIDA" ||
+          movimientoSeleccionado.includes("SALIDA") ||
+          (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
+
         login({
           ...resultado,
           ultimoMovimientoHoy: movimientoSeleccionado,
+          tieneSalidaHoy: huboSalidaOffline,
         });
         setAlertState({
           show: true,
@@ -507,9 +513,16 @@ export const useHome = () => {
       if (response.data) {
         iniciarCooldownMarcaje(resultado.rfc);
         setRegistroResult(response.data);
+        const huboSalidaOnline =
+          Boolean(resultado.tieneSalidaHoy) ||
+          movimientoSeleccionado === "SALIDA" ||
+          movimientoSeleccionado.includes("SALIDA") ||
+          (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
+
         login({
           ...resultado,
           ultimoMovimientoHoy: movimientoSeleccionado,
+          tieneSalidaHoy: huboSalidaOnline,
         });
         setAlertState({
           show: true,

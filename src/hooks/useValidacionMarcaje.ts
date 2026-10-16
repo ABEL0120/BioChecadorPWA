@@ -105,32 +105,18 @@ export const useValidacionMarcaje = (
         if (
           userLocation &&
           empleado.latitudEmpresa != null &&
-          empleado.longitudEmpresa != null &&
-          empleado.radioToleranciaMetros != null
+          empleado.longitudEmpresa != null
         ) {
-          const esRemoto = true;
-
-          if (esRemoto) {
-            isDentroDeRango = true;
-          } else {
-            const d = calcularDistanciaHaversine(
-              userLocation.latitud,
-              userLocation.longitud,
-              empleado.latitudEmpresa,
-              empleado.longitudEmpresa,
-            );
-            distancia = d;
-
-            const umbralGps = 15;
-            const radioEfectivo = empleado.radioToleranciaMetros + umbralGps;
-
-            if (d <= radioEfectivo) {
-              isDentroDeRango = true;
-            } else {
-              isDentroDeRango = false;
-            }
-          }
+          distancia = calcularDistanciaHaversine(
+            userLocation.latitud,
+            userLocation.longitud,
+            empleado.latitudEmpresa,
+            empleado.longitudEmpresa,
+          );
         }
+
+        // Permitir marcar donde sea sin restricción de distancia ni geocerca
+        isDentroDeRango = true;
 
         const hoyStr = timeService.now().toISOString().split("T")[0];
         const fechaGuardado = (empleado as any).fechaGuardadoLocal;
@@ -140,31 +126,23 @@ export const useValidacionMarcaje = (
           ultimo = "";
         }
 
+        const yaHaySalidaHoy = Boolean(
+          empleado.tieneSalidaHoy ||
+          ultimo === "SALIDA" ||
+          ultimo.includes("SALIDA"),
+        );
+
         let fallbackMovements: MovimientoPermitido[] = ["ENTRADA"];
-        if (!ultimo) {
+        if (!ultimo || ultimo === "SALIDA") {
           fallbackMovements = ["ENTRADA"];
         } else if (ultimo === "ENTRADA" || ultimo === "RETARDO") {
           fallbackMovements = ["SALIDA_COMIDA", "SALIDA"];
         } else if (ultimo === "SALIDA_COMIDA" || ultimo === "SALIDA_COMER") {
-          fallbackMovements = ["ENTRADA_COMIDA"];
+          fallbackMovements = ["ENTRADA_COMIDA", "SALIDA"];
         } else if (ultimo === "ENTRADA_COMIDA" || ultimo === "ENTRADA_COMER") {
           fallbackMovements = ["SALIDA"];
-        } else if (ultimo === "SALIDA") {
-          fallbackMovements = ["ENTRADA"];
-        }
-
-        if (!isDentroDeRango) {
-          setResult({
-            isValido: false,
-            motivoBloqueo: distancia
-              ? `Fuera del área permitida (a ${Math.round(distancia)}m, límite: ${empleado.radioToleranciaMetros}m).`
-              : "Fuera del área permitida",
-            mensajeAdvertencia: null,
-            siguienteMovimiento: fallbackMovements,
-            distanciaMetros: distancia !== null ? Math.round(distancia) : null,
-            toleranciaDeadline: null,
-          });
-          return;
+        } else {
+          fallbackMovements = ["ENTRADA", "SALIDA"];
         }
 
         const horarioArray = getHorarioArray(empleado);
@@ -212,7 +190,9 @@ export const useValidacionMarcaje = (
         let mensajeAdvertenciaFinal: string | null = null;
         let currentToleranciaDeadline: Date | null = null;
 
+        // Solo calcular retardo si es la primera entrada del día y NO ha habido ninguna salida previa
         if (
+          !yaHaySalidaHoy &&
           nextMovements[0] === "ENTRADA" &&
           turnoHoy?.esLaborable &&
           turnoHoy?.entrada &&
@@ -243,8 +223,8 @@ export const useValidacionMarcaje = (
         });
       } catch (error) {
         setResult({
-          isValido: false,
-          motivoBloqueo: "Error calculando validación (Contacte soporte)",
+          isValido: true,
+          motivoBloqueo: null,
           mensajeAdvertencia: null,
           siguienteMovimiento: ["ENTRADA"],
           distanciaMetros: null,

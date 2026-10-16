@@ -42,7 +42,7 @@ interface Props {
 
 const getMovementIcon = (mov: string) => {
   if (mov.includes("ENTRADA_COMIDA") || mov.includes("SALIDA_COMIDA")) return restaurantOutline;
-  if (mov.includes("ENTRADA")) return logInOutline;
+  if (mov.includes("ENTRADA") || mov.includes("RETARDO")) return logInOutline;
   return logOutOutline;
 };
 
@@ -145,15 +145,11 @@ export const PanelMarcaje: React.FC<Props> = ({
             {siguienteMovimiento.map((mov) => (
               <button
                 key={mov}
-                disabled={marking || hasPendingOffline || !isValido || cooldownSeconds > 0}
+                disabled={marking || (cooldownSeconds != null && cooldownSeconds > 0)}
                 onClick={() => handleMarcarAsistencia(mov)}
                 className={`w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
-                  hasPendingOffline
+                  marking || (cooldownSeconds != null && cooldownSeconds > 0)
                     ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                    : !isValido
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                    : cooldownSeconds > 0
-                    ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none"
                     : mov.includes("COMIDA")
                     ? "bg-orange-500 text-white hover:bg-orange-600 shadow-md hover:shadow-lg hover:shadow-orange-200 active:scale-[0.98]"
                     : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg hover:shadow-emerald-200 active:scale-[0.98]"
@@ -161,17 +157,7 @@ export const PanelMarcaje: React.FC<Props> = ({
               >
                 {marking ? (
                   <IonSpinner name="crescent" className="w-5 h-5 text-current" />
-                ) : hasPendingOffline ? (
-                  <>
-                    <IonIcon icon={logOutOutline} className="text-xl" />
-                    <span>Sincronización Pendiente</span>
-                  </>
-                ) : !isValido ? (
-                  <>
-                    <IonIcon icon={lockClosedOutline} className="text-xl" />
-                    <span>Bloqueado</span>
-                  </>
-                ) : cooldownSeconds > 0 ? (
+                ) : cooldownSeconds != null && cooldownSeconds > 0 ? (
                   <>
                     <IonIcon icon={timeOutline} className="text-xl text-slate-400" />
                     <span>Espera {cooldownSeconds}s</span>
@@ -179,7 +165,17 @@ export const PanelMarcaje: React.FC<Props> = ({
                 ) : (
                   <>
                     <IonIcon icon={fingerPrintOutline} className="text-xl" />
-                    <span>Marcar {formatMovementLabel(mov)}</span>
+                    <span>
+                      {mov === "ENTRADA" &&
+                      (resultado?.tieneSalidaHoy ||
+                        (resultado?.ultimoMovimientoHoy || "").toUpperCase() ===
+                          "SALIDA" ||
+                        (resultado?.ultimoMovimientoHoy || "")
+                          .toUpperCase()
+                          .includes("SALIDA"))
+                        ? "Volver a entrar"
+                        : `Marcar ${formatMovementLabel(mov)}`}
+                    </span>
                   </>
                 )}
               </button>
