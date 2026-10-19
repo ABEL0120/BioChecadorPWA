@@ -34,6 +34,18 @@ html {
   color: var(--ion-text-color) !important;
   font-family: var(--ion-font-family);
   -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Evitar auto-zoom en iOS Safari cuando inputs tienen font-size < 16px */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 ion-content {

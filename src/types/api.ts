@@ -41,6 +41,7 @@ export interface EstadoEmpleadoDto {
   radioToleranciaMetros?: number;
   ultimoMovimientoHoy?: string;
   tieneSalidaHoy?: boolean;
+  tieneSuscripcionPush?: boolean;
   horario?: HorarioDto | TurnoDetalleDto[];
   trabajoRemoto?: string;
   numeroEmpleado?: number;

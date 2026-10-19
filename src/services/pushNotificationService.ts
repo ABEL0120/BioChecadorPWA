@@ -9,6 +9,8 @@ const STORAGE_KEY = "reloj_nomina_push_config";
 export interface PushConfigLocal {
   minutosAnticipacion: number;
   activo: boolean;
+  desactivadoManualmente?: boolean;
+  alertaDescartadaTimestamp?: number;
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -170,6 +172,10 @@ export const guardarConfiguracionLocal = (
   } catch {}
 };
 
+export const descartarAlertaNotificaciones = (): void => {
+  guardarConfiguracionLocal({ alertaDescartadaTimestamp: Date.now() });
+};
+
 export const suscribirNotificaciones = async (
   rfc: string,
   dispositivo: string,
@@ -222,7 +228,7 @@ export const suscribirNotificaciones = async (
       payload,
     );
 
-    guardarConfiguracionLocal({ activo: true });
+    guardarConfiguracionLocal({ activo: true, desactivadoManualmente: false });
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("push_subscription_changed", {
@@ -275,7 +281,7 @@ export const desuscribirNotificaciones = async (
       } catch {}
     }
 
-    guardarConfiguracionLocal({ activo: false });
+    guardarConfiguracionLocal({ activo: false, desactivadoManualmente: true });
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("push_subscription_changed", {
@@ -341,6 +347,20 @@ export const probarNotificacionRemota = async (
         error?.message ||
         "Error al enviar notificación de prueba.",
     };
+  }
+};
+
+export const verificarEstadoPushServidor = async (
+  rfc: string,
+  dispositivo: string,
+): Promise<boolean> => {
+  try {
+    const res = await apiClient.get(API_ENDPOINTS.NOTIFICACIONES.ESTADO, {
+      params: { rfc, dispositivo },
+    });
+    return res.data?.tieneSuscripcion === true;
+  } catch {
+    return false;
   }
 };
 

@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
     REGISTRO: "/auth/registro",
   },
   NOTIFICACIONES: {
+    ESTADO: "/notificaciones/estado",
     SUSCRIBIR: "/notificaciones/suscribir",
     DESUSCRIBIR: "/notificaciones/desuscribir",
   },

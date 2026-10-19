@@ -20,6 +20,7 @@ import {
   isSubscribed,
   suscribirNotificaciones,
   obtenerConfiguracionLocal,
+  getNotificationPermission,
 } from "../services/pushNotificationService";
 
 export const useHome = () => {
@@ -83,16 +84,29 @@ export const useHome = () => {
       isPushSupported()
     ) {
       const currentRfc = resultado.rfc;
+      const deviceName = biometricService.getDeviceName();
+      const perm = getNotificationPermission();
       const config = obtenerConfiguracionLocal();
-      if (
-        Notification.permission === "default" ||
-        (Notification.permission === "granted" && config.activo !== false)
-      ) {
-        const deviceName = biometricService.getDeviceName();
+
+      if (config.desactivadoManualmente) {
+        return;
+      }
+
+      // Si el navegador ya tiene permiso otorgado pero la API perdió la suscripción push (ej. se borró el json al publicar):
+      // Re-suscribir en segundo plano de inmediato para regenerar el JSON en el servidor
+      if (resultado.tieneSuscripcionPush === false && perm === "granted") {
+        suscribirNotificaciones(currentRfc, deviceName)
+          .then((res) => {
+            if (res.success) {
+              login({ ...resultado, tieneSuscripcionPush: true });
+            }
+          })
+          .catch(() => {});
+      } else if (perm === "granted" && config.activo !== false) {
         suscribirNotificaciones(currentRfc, deviceName).catch(() => {});
       }
     }
-  }, [resultado?.rfc, resultado?.tieneBiometria]);
+  }, [resultado?.rfc, resultado?.tieneBiometria, resultado?.tieneSuscripcionPush]);
 
   const {
     isValido,
@@ -288,13 +302,18 @@ export const useHome = () => {
           .catch(() => {});
 
         if (response.data.tieneBiometria && isPushSupported()) {
+          const deviceName = biometricService.getDeviceName();
           const config = obtenerConfiguracionLocal();
-          if (
-            Notification.permission === "default" ||
-            (Notification.permission === "granted" && config.activo !== false)
-          ) {
-            const deviceName = biometricService.getDeviceName();
-            suscribirNotificaciones(cleanRfc, deviceName).catch(() => {});
+          if (!config.desactivadoManualmente) {
+            if (response.data.tieneSuscripcionPush === false && Notification.permission === "granted") {
+              suscribirNotificaciones(cleanRfc, deviceName)
+                .then((res) => {
+                  if (res.success && response.data) {
+                    login({ ...response.data, tieneSuscripcionPush: true });
+                  }
+                })
+                .catch(() => {});
+            }
           }
         }
       } else {
@@ -337,7 +356,11 @@ export const useHome = () => {
 
         if (isPushSupported()) {
           const deviceName = biometricService.getDeviceName();
-          suscribirNotificaciones(resultado.rfc, deviceName).catch(() => {});
+          const config = obtenerConfiguracionLocal();
+          if (!config.desactivadoManualmente) {
+            // Se solicita el permiso nativo del navegador inmediatamente después de registrar la biometría
+            suscribirNotificaciones(resultado.rfc, deviceName).catch(() => {});
+          }
         }
 
         setAlertState({

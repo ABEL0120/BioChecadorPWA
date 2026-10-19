@@ -32,7 +32,7 @@ export const FormularioBusquedaEmpleado: React.FC<Props> = ({
             placeholder="Ingresa tu RFC"
             value={rfc}
             onChange={(e) => setRfc(e.target.value.toUpperCase())}
-            className="w-full flex-1 bg-transparent border-none outline-none p-0 m-0 font-mono uppercase font-black text-slate-800 text-[15px] tracking-widest placeholder:text-slate-400 placeholder:font-mono placeholder:tracking-widest leading-normal"
+            className="w-full flex-1 bg-transparent border-none outline-none p-0 m-0 font-mono uppercase font-black text-slate-800 text-base tracking-widest placeholder:text-slate-400 placeholder:font-mono placeholder:tracking-widest leading-normal"
             autoCapitalize="characters"
             maxLength={13}
           />

@@ -130,6 +130,57 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
     }
   }
 
+  const getHorarioOficialParaFecha = (fechaStr: string) => {
+    let entrada = "08:00";
+    let salida = "17:00";
+    let salidaComida = "13:00";
+    let regresoComida = "14:00";
+    let esLaborable = true;
+    let encontrado = false;
+
+    if (fechaStr && horarioArray.length > 0) {
+      const parts = fechaStr.split("-").map(Number);
+      if (parts.length === 3) {
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        const dow = d.getDay();
+        const nombreJS = diasSemanaJS[dow];
+        const turno = horarioArray.find(
+          (h) => normalizeStr(h.diaNombre) === nombreJS,
+        );
+        if (turno) {
+          if (turno.entrada) entrada = turno.entrada;
+          if (turno.salida) salida = turno.salida;
+          if (turno.salidaComida) salidaComida = turno.salidaComida;
+          if (turno.regresoComida) regresoComida = turno.regresoComida;
+          if (typeof turno.esLaborable === "boolean")
+            esLaborable = turno.esLaborable;
+          encontrado = true;
+        }
+      }
+    }
+
+    if (!encontrado && datosIniciales?.horarioHoy) {
+      const partes = datosIniciales.horarioHoy.split("-").map((s) => s.trim());
+      if (partes.length === 2 && partes[0] && partes[1]) {
+        entrada = partes[0];
+        salida = partes[1];
+        encontrado = true;
+      }
+    }
+
+    if (datosIniciales?.comidaHoy) {
+      const partesComida = datosIniciales.comidaHoy
+        .split("-")
+        .map((s) => s.trim());
+      if (partesComida.length === 2 && partesComida[0] && partesComida[1]) {
+        salidaComida = partesComida[0];
+        regresoComida = partesComida[1];
+      }
+    }
+
+    return { entrada, salida, salidaComida, regresoComida, esLaborable };
+  };
+
   const isLaborableDay = (date: Date): boolean => {
     const dow = date.getDay();
     const nombreJS = diasSemanaJS[dow];
@@ -194,15 +245,56 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
   const totalLaborables = diasLaborables.length;
 
   const handleSelectTipoAusencia = (
-    tipo: "llegar_tarde" | "salir_temprano" | "intermedio" | "todo_dia" | "manual"
+    tipo:
+      | "llegar_tarde"
+      | "salir_temprano"
+      | "intermedio"
+      | "todo_dia"
+      | "manual",
   ) => {
-    setTipoAusencia((prev) => (prev === tipo ? "manual" : tipo));
+    const nuevoTipo = tipoAusencia === tipo ? "manual" : tipo;
+    setTipoAusencia(nuevoTipo);
+
+    const horarioDia = getHorarioOficialParaFecha(fechaInicio);
+
+    if (nuevoTipo === "todo_dia") {
+      setHoraInicio(horarioDia.entrada);
+      setHoraFin(horarioDia.salida);
+    } else if (nuevoTipo === "llegar_tarde") {
+      setHoraInicio(horarioDia.entrada);
+      if (!horaFin || horaFin <= horarioDia.entrada) {
+        const [h, m] = horarioDia.entrada.split(":").map(Number);
+        const horaSug = `${String(Math.min(h + 1, 23)).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`;
+        setHoraFin(horaSug);
+      }
+    } else if (nuevoTipo === "salir_temprano") {
+      setHoraFin(horarioDia.salida);
+      if (!horaInicio || horaInicio >= horarioDia.salida) {
+        const [h, m] = horarioDia.salida.split(":").map(Number);
+        const horaSug = `${String(Math.max(h - 1, 0)).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`;
+        setHoraInicio(horaSug);
+      }
+    } else if (nuevoTipo === "intermedio") {
+      if (horarioDia.salidaComida && horarioDia.regresoComida) {
+        setHoraInicio(horarioDia.salidaComida);
+        setHoraFin(horarioDia.regresoComida);
+      } else {
+        const [hEnt] = horarioDia.entrada.split(":").map(Number);
+        const [hSal] = horarioDia.salida.split(":").map(Number);
+        const medio = Math.floor((hEnt + hSal) / 2);
+        setHoraInicio(`${String(medio).padStart(2, "0")}:00`);
+        setHoraFin(`${String(medio + 1).padStart(2, "0")}:00`);
+      }
+    } else if (nuevoTipo === "manual") {
+      if (!horaInicio) setHoraInicio(horarioDia.entrada);
+      if (!horaFin) setHoraFin(horarioDia.salida);
+    }
   };
 
   const prepararHorasParaCalculo = () => {
-    // Constantes oficiales (conectar aquí con el objeto user.horario según el turno)
-    const HORA_ENTRADA_OFICIAL = "09:00";
-    const HORA_SALIDA_OFICIAL = "18:00";
+    const horarioDia = getHorarioOficialParaFecha(fechaInicio);
+    const HORA_ENTRADA_OFICIAL = horarioDia.entrada;
+    const HORA_SALIDA_OFICIAL = horarioDia.salida;
 
     let hi = horaInicio;
     let hf = horaFin;
@@ -227,31 +319,43 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
     if (permisoEditar) {
       const fi = (permisoEditar.fechaInicioPermiso || "").replace(/\//g, "-");
       const ff = (permisoEditar.fechaFinalizaPermiso || "").replace(/\//g, "-");
+      const horarioDia = getHorarioOficialParaFecha(fi || todayStr);
       setFechaInicio(fi || todayStr);
       setFechaFin(ff || todayStr);
       setEsMismoDia(fi === ff);
-      setHoraInicio(permisoEditar.horaIniciaPermiso || "09:00");
-      setHoraFin(permisoEditar.horaFinalizaPermiso || "13:00");
+      setHoraInicio(permisoEditar.horaIniciaPermiso || horarioDia.entrada);
+      setHoraFin(permisoEditar.horaFinalizaPermiso || horarioDia.salida);
       setTipoAusencia("manual");
       setMotivo(permisoEditar.motivoPermiso || "");
       setErrorMsg(null);
     } else {
+      const horarioDia = getHorarioOficialParaFecha(todayStr);
       setFechaInicio(todayStr);
       setFechaFin(todayStr);
       setEsMismoDia(true);
-      setHoraInicio("09:00");
-      setHoraFin("13:00");
+      setHoraInicio(horarioDia.entrada);
+      setHoraFin(horarioDia.salida);
       setTipoAusencia("manual");
       setMotivo("");
       setErrorMsg(null);
       clearCalculo();
     }
-  }, [permisoEditar, todayStr]);
+  }, [
+    permisoEditar,
+    todayStr,
+    horarioArray.length,
+    datosIniciales?.horarioHoy,
+  ]);
 
   const handleTipoDiaToggle = (mismoDia: boolean) => {
     setEsMismoDia(mismoDia);
     if (mismoDia) {
       setFechaFin(fechaInicio);
+      const horarioDia = getHorarioOficialParaFecha(fechaInicio);
+      if (tipoAusencia === "todo_dia") {
+        setHoraInicio(horarioDia.entrada);
+        setHoraFin(horarioDia.salida);
+      }
     } else {
       setTipoAusencia("manual");
     }
@@ -261,6 +365,17 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
     setFechaInicio(val);
     if (esMismoDia || val > fechaFin) {
       setFechaFin(val);
+    }
+    if (esMismoDia) {
+      const nuevoHorario = getHorarioOficialParaFecha(val);
+      if (tipoAusencia === "todo_dia") {
+        setHoraInicio(nuevoHorario.entrada);
+        setHoraFin(nuevoHorario.salida);
+      } else if (tipoAusencia === "llegar_tarde") {
+        setHoraInicio(nuevoHorario.entrada);
+      } else if (tipoAusencia === "salir_temprano") {
+        setHoraFin(nuevoHorario.salida);
+      }
     }
   };
 
@@ -379,6 +494,8 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
     }
   };
 
+  const horarioDiaActual = getHorarioOficialParaFecha(fechaInicio);
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -404,20 +521,34 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
         </div>
       )}
 
-      <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/70 gap-2.5 items-center">
-        <div className="flex items-center gap-2.5 min-w-0 w-full">
+      <div className="w-full">
+        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/70 flex items-center gap-2.5 w-full">
           <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
             <IonIcon icon={personOutline} className="text-base" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Autoriza
             </p>
-            <p className="text-xs font-bold text-slate-800">
+            <p className="text-xs font-bold text-slate-800 truncate">
               {datosIniciales.jefeInmediatoNombre || "Sin asignar"}
             </p>
           </div>
         </div>
+
+        {/* <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/70 flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+            <IonIcon icon={timeOutline} className="text-base" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Horario del Turno
+            </p>
+            <p className="text-xs font-bold text-slate-800 truncate">
+              {horarioDiaActual.entrada} - {horarioDiaActual.salida}
+            </p>
+          </div>
+        </div> */}
       </div>
 
       <div className="space-y-3 pt-1">
@@ -604,58 +735,104 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
           </div>
         )}
 
+        {esMismoDia && tipoAusencia === "todo_dia" && (
+          <div className="bg-blue-50/70 border border-blue-200/60 rounded-2xl p-3.5 flex items-center gap-3 text-xs text-blue-800 font-medium">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg shrink-0">
+              <IonIcon icon={calendarClearOutline} />
+            </div>
+            <div>
+              <p className="font-bold text-blue-900">
+                Jornada Completa Oficial
+              </p>
+              <p className="text-[11px] text-blue-700">
+                Permiso de <strong>{horarioDiaActual.entrada}</strong> a{" "}
+                <strong>{horarioDiaActual.salida}</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+
         {(!esMismoDia || tipoAusencia !== "todo_dia") && (
-          <div
-            className={`grid ${
-              esMismoDia &&
-              (tipoAusencia === "llegar_tarde" || tipoAusencia === "salir_temprano")
-                ? "grid-cols-1"
-                : "grid-cols-1 sm:grid-cols-2"
-            } gap-3`}
-          >
-            {(!esMismoDia ||
-              tipoAusencia === "intermedio" ||
-              tipoAusencia === "manual" ||
-              tipoAusencia === "salir_temprano") && (
-              <div className="min-w-0">
-                <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1 ml-1">
-                  {esMismoDia && tipoAusencia === "salir_temprano"
-                    ? "A partir de qué hora"
-                    : esMismoDia
-                    ? "Hora de Salida"
-                    : "Hora Inicio"}
-                </label>
-                <input
-                  required
-                  type="time"
-                  value={horaInicio}
-                  onChange={(e) => setHoraInicio(e.target.value)}
-                  className="w-full text-xs sm:text-sm font-semibold text-slate-700 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
+          <div className="space-y-2.5">
+            {esMismoDia && tipoAusencia === "llegar_tarde" && (
+              <div className="bg-blue-50/70 border border-blue-200/60 rounded-xl p-2.5 flex items-center gap-2 text-xs text-blue-800 font-medium">
+                <IonIcon
+                  icon={logInOutline}
+                  className="text-base text-blue-600 shrink-0"
                 />
+                <span>
+                  Entrada oficial: <strong>{horarioDiaActual.entrada}</strong>.
+                  Indica a qué hora llegarás:
+                </span>
               </div>
             )}
 
-            {(!esMismoDia ||
-              tipoAusencia === "intermedio" ||
-              tipoAusencia === "manual" ||
-              tipoAusencia === "llegar_tarde") && (
-              <div className="min-w-0">
-                <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1 ml-1">
-                  {esMismoDia && tipoAusencia === "llegar_tarde"
-                    ? "Hora estimada de llegada"
-                    : esMismoDia
-                    ? "Hora de Regreso"
-                    : "Hora Fin"}
-                </label>
-                <input
-                  required
-                  type="time"
-                  value={horaFin}
-                  onChange={(e) => setHoraFin(e.target.value)}
-                  className="w-full text-xs sm:text-sm font-semibold text-slate-700 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
+            {esMismoDia && tipoAusencia === "salir_temprano" && (
+              <div className="bg-blue-50/70 border border-blue-200/60 rounded-xl p-2.5 flex items-center gap-2 text-xs text-blue-800 font-medium">
+                <IonIcon
+                  icon={logOutOutline}
+                  className="text-base text-blue-600 shrink-0"
                 />
+                <span>
+                  Salida oficial: <strong>{horarioDiaActual.salida}</strong>.
+                  Indica a qué hora te retirarás:
+                </span>
               </div>
             )}
+
+            <div
+              className={`grid ${
+                esMismoDia &&
+                (tipoAusencia === "llegar_tarde" ||
+                  tipoAusencia === "salir_temprano")
+                  ? "grid-cols-1"
+                  : "grid-cols-1 sm:grid-cols-2"
+              } gap-3`}
+            >
+              {(!esMismoDia ||
+                tipoAusencia === "intermedio" ||
+                tipoAusencia === "manual" ||
+                tipoAusencia === "salir_temprano") && (
+                <div className="min-w-0">
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1 ml-1">
+                    {esMismoDia && tipoAusencia === "salir_temprano"
+                      ? "A partir de qué hora te retiras"
+                      : esMismoDia
+                        ? "Hora de Salida"
+                        : "Hora Inicio"}
+                  </label>
+                  <input
+                    required
+                    type="time"
+                    value={horaInicio}
+                    onChange={(e) => setHoraInicio(e.target.value)}
+                    className="w-full text-xs sm:text-sm font-semibold text-slate-700 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
+                  />
+                </div>
+              )}
+
+              {(!esMismoDia ||
+                tipoAusencia === "intermedio" ||
+                tipoAusencia === "manual" ||
+                tipoAusencia === "llegar_tarde") && (
+                <div className="min-w-0">
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1 ml-1">
+                    {esMismoDia && tipoAusencia === "llegar_tarde"
+                      ? "Hora estimada de llegada"
+                      : esMismoDia
+                        ? "Hora de Regreso"
+                        : "Hora Fin"}
+                  </label>
+                  <input
+                    required
+                    type="time"
+                    value={horaFin}
+                    onChange={(e) => setHoraFin(e.target.value)}
+                    className="w-full text-xs sm:text-sm font-semibold text-slate-700 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
 

@@ -210,6 +210,7 @@ export const Home: React.FC = () => {
           buttons={["Aceptar"]}
         />
 
+
         <IonToast
           isOpen={toastState.show}
           onDidDismiss={() => setToastState({ ...toastState, show: false })}
