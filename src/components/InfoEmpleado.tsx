@@ -3,7 +3,6 @@ import { IonIcon, IonSpinner } from "@ionic/react";
 import {
   alertCircleOutline,
   warningOutline,
-  lockClosedOutline,
   fingerPrintOutline,
   timeOutline,
 } from "ionicons/icons";
@@ -137,8 +136,8 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
                 marking || cooldownSeconds > 0
                   ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                   : mov.includes("COMIDA")
-                  ? "bg-orange-500 text-white hover:bg-orange-600 shadow-xl shadow-orange-200/50 active:scale-[0.98]"
-                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
+                    ? "bg-orange-500 text-white hover:bg-orange-600 shadow-xl shadow-orange-200/50 active:scale-[0.98]"
+                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
               }`}
             >
               {marking ? (

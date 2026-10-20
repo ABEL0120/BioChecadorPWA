@@ -42,6 +42,8 @@ export const checadorApi = {
         ultimoMovimientoHoy: raw.ultimoMovimientoHoy ?? raw.UltimoMovimientoHoy,
         //  trabajoRemoto: raw.trabajoRemoto ?? raw.TrabajoRemoto,
         trabajoRemoto: "S", // CAMBIO TEMPORAL
+        tieneSuscripcionPush:
+          raw.tieneSuscripcionPush ?? raw.TieneSuscripcionPush ?? false,
         numeroEmpleado: raw.numeroEmpleado ?? raw.NumeroEmpleado,
         horario: raw.horario ?? raw.Horario,
       };

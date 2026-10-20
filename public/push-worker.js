@@ -11,8 +11,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Recordatorio de Asistencia";
   const options = {
     body: data.body || "Es hora de registrar tu asistencia.",
-    icon: data.icon || "/pwa-192x192-v2.png",
-    badge: data.badge || "/pwa-192x192-v2.png",
+    icon: data.icon || "/pwa-192x192-v3.png",
+    badge: data.badge || "/pwa-192x192-v3.png",
     vibrate: data.vibrate || [250, 100, 250],
     data: {
       url: data.url || "/home",

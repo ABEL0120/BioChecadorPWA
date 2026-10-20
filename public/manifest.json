@@ -4,25 +4,43 @@
   "description": "Sistema de Control de Asistencia Biométrica y GPS",
   "icons": [
     {
-      "src": "pwa-192x192-v2.png",
+      "src": "pwa-64x64-v3.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "pwa-128x128-v3.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "pwa-192x192-v3.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "pwa-512x512-v2.png",
+      "src": "pwa-256x256-v3.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "pwa-512x512-v3.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "pwa-192x192-v2.png",
+      "src": "pwa-192x192-v3.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "pwa-512x512-v2.png",
+      "src": "pwa-512x512-v3.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -32,5 +50,5 @@
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#2563eb",
-  "background_color": "#f8fafc"
+  "background_color": "#2563eb"
 }

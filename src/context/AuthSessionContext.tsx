@@ -12,7 +12,11 @@ import { offlineSyncService } from "../services/offlineSyncService";
 
 export interface AuthSessionContextType {
   user: EstadoEmpleadoDto | null;
-  login: (user: EstadoEmpleadoDto) => void;
+  login: (
+    user:
+      | Partial<EstadoEmpleadoDto>
+      | ((prev: EstadoEmpleadoDto | null) => EstadoEmpleadoDto | null),
+  ) => void;
   logout: () => void;
   refresh: () => Promise<{ success: boolean; message: string }>;
   isLoadingSession: boolean;
@@ -21,7 +25,6 @@ export interface AuthSessionContextType {
 const AuthSessionContext = createContext<AuthSessionContextType | undefined>(
   undefined,
 );
-
 const SESSION_KEY = "reloj_nomina_session";
 
 export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
@@ -29,17 +32,11 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<EstadoEmpleadoDto | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
-
   useEffect(() => {
     let isMounted = true;
-
-    // Timeout de seguridad máximo de 6 segundos para garantizar que jamás se quede congelada la app
     const safetyTimeout = setTimeout(() => {
-      if (isMounted) {
-        setIsLoadingSession(false);
-      }
+      if (isMounted) setIsLoadingSession(false);
     }, 6000);
-
     const hydrateSession = async () => {
       try {
         const stored = localStorage.getItem(SESSION_KEY);
@@ -47,11 +44,8 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
           const parsedUser = JSON.parse(stored) as EstadoEmpleadoDto;
           if (isMounted) {
             setUser(parsedUser);
-            // Si ya tenemos datos guardados localmente, liberamos la interfaz de inmediato
             setIsLoadingSession(false);
           }
-
-          // Validación en segundo plano (Stale-While-Revalidate)
           if (navigator.onLine && parsedUser.rfc) {
             const deviceName = biometricService.getDeviceName();
             const res = await checadorApi.verificarRfc(
@@ -74,15 +68,11 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
         }
       } catch (err) {
       } finally {
-        if (isMounted) {
-          setIsLoadingSession(false);
-        }
+        if (isMounted) setIsLoadingSession(false);
         clearTimeout(safetyTimeout);
       }
     };
-
     hydrateSession();
-
     return () => {
       isMounted = false;
       clearTimeout(safetyTimeout);
@@ -95,7 +85,6 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
       try {
         const pending = await offlineSyncService.obtenerChecadasPendientes();
         if (pending.length === 0) return;
-
         let syncedAny = false;
         for (const punch of pending) {
           try {
@@ -115,30 +104,37 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
             }
           }
         }
-
-        if (syncedAny) {
-          refresh();
-        }
+        if (syncedAny) refresh();
       } catch (err) {}
     };
-
     window.addEventListener("online", syncOfflinePunches);
-    if (navigator.onLine) {
-      syncOfflinePunches();
-    }
-
+    if (navigator.onLine) syncOfflinePunches();
     return () => {
       window.removeEventListener("online", syncOfflinePunches);
     };
   }, []);
 
-  const login = (newUser: EstadoEmpleadoDto) => {
-    const userData = {
-      ...newUser,
-      fechaGuardadoLocal: new Date().toISOString().split("T")[0],
-    };
-    setUser(userData);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+  const login = (
+    newUser:
+      | Partial<EstadoEmpleadoDto>
+      | ((prev: EstadoEmpleadoDto | null) => EstadoEmpleadoDto | null),
+  ) => {
+    setUser((prev) => {
+      const stored = localStorage.getItem(SESSION_KEY);
+      const currentStored = stored
+        ? (JSON.parse(stored) as EstadoEmpleadoDto)
+        : null;
+      const base = prev || currentStored || ({} as EstadoEmpleadoDto);
+      const resolved =
+        typeof newUser === "function" ? newUser(base) : { ...base, ...newUser };
+      if (!resolved) return null;
+      const userData = {
+        ...resolved,
+        fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+      return userData;
+    });
   };
 
   const logout = () => {
@@ -149,32 +145,39 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = async (): Promise<{ success: boolean; message: string }> => {
-    if (isRefreshing)
+    if (
+      isRefreshing ||
+      sessionStorage.getItem("enrolling_biometric") === "true"
+    )
       return { success: false, message: "Actualización en progreso..." };
-
     const stored = localStorage.getItem(SESSION_KEY);
     const currentUser = stored
       ? (JSON.parse(stored) as EstadoEmpleadoDto)
       : null;
-
-    if (!currentUser?.rfc || !navigator.onLine) {
+    if (!currentUser?.rfc || !navigator.onLine)
       return {
         success: false,
         message: "No se puede actualizar sin conexión o sin sesión.",
       };
-    }
-
     setIsRefreshing(true);
     try {
       const deviceName = biometricService.getDeviceName();
       const res = await checadorApi.verificarRfc(currentUser.rfc, deviceName);
       if (res.success && res.data && res.data.existe) {
-        const userData = {
-          ...res.data,
-          fechaGuardadoLocal: new Date().toISOString().split("T")[0],
-        };
-        setUser(userData);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+        setUser((prev) => {
+          const freshData = res.data!;
+          const tieneBio =
+            sessionStorage.getItem("enrolling_biometric") === "true" ||
+            prev?.tieneBiometria ||
+            freshData.tieneBiometria;
+          const userData = {
+            ...freshData,
+            tieneBiometria: tieneBio,
+            fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+          };
+          localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+          return userData;
+        });
         return {
           success: true,
           message: "Información actualizada correctamente.",
@@ -194,6 +197,7 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && navigator.onLine) {
+        if (sessionStorage.getItem("enrolling_biometric") === "true") return;
         refresh().catch(() => {});
       }
     };
@@ -201,7 +205,6 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [refresh]);
-
   return (
     <AuthSessionContext.Provider
       value={{ user, login, logout, refresh, isLoadingSession }}
@@ -213,10 +216,9 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
 
 export const useAuthSession = (): AuthSessionContextType => {
   const context = useContext(AuthSessionContext);
-  if (context === undefined) {
+  if (context === undefined)
     throw new Error(
       "useAuthSession must be used within an AuthSessionProvider",
     );
-  }
   return context;
 };

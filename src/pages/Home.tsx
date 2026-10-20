@@ -14,12 +14,12 @@ import {
   IonButton,
   IonIcon,
 } from "@ionic/react";
-import { 
-  timeOutline, 
-  alertCircleOutline, 
-  lockClosedOutline, 
+import {
+  timeOutline,
+  alertCircleOutline,
+  lockClosedOutline,
   fingerPrintOutline,
-  warningOutline
+  warningOutline,
 } from "ionicons/icons";
 import { useReloj } from "../hooks/useReloj";
 import { FormularioBusquedaEmpleado } from "../components/FormularioBusquedaEmpleado";
@@ -33,7 +33,7 @@ export const Home: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 768);  
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -90,7 +90,6 @@ export const Home: React.FC = () => {
     return mov;
   };
 
-
   return (
     <IonPage className="bg-slate-50">
       <IonHeader className="ion-no-border">
@@ -102,13 +101,13 @@ export const Home: React.FC = () => {
             <IonMenuButton style={{ color: "#1e293b" }} />
           </IonButtons>
 
-          <IonTitle 
+          <IonTitle
             className="font-black tracking-tight text-lg text-center pr-12"
             style={{ color: "#1e293b" }}
           >
             Reloj Nómina
           </IonTitle>
-          
+
           {resultado && (
             <IonButtons slot="end" className="absolute right-2">
               <button
@@ -131,26 +130,39 @@ export const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent scrollY={!resultado} className="bg-slate-50" style={{ "--background": "transparent" }}>
+      <IonContent
+        scrollY={!resultado}
+        className="bg-slate-50"
+        style={{ "--background": "transparent" }}
+      >
         {isLoadingSession ? (
           <div className="flex justify-center p-12">
             <IonSpinner name="crescent" className="text-blue-500 w-8 h-8" />
           </div>
         ) : resultado ? (
-          <div className={`absolute inset-0 flex ${isDesktop ? 'flex-row' : 'flex-col'} overflow-hidden bg-slate-100`}>
-            <div className={`relative ${isDesktop ? 'flex-1 h-full' : 'h-[40vh]'} shrink-0`}>
+          <div
+            className={`absolute inset-0 flex ${isDesktop ? "flex-row" : "flex-col"} overflow-hidden bg-slate-100`}
+          >
+            <div
+              className={`relative ${isDesktop ? "flex-1 h-full" : "h-[40vh]"} shrink-0`}
+            >
               <GeofenceMap
                 empresaLat={resultado.latitudEmpresa || 0}
                 empresaLng={resultado.longitudEmpresa || 0}
                 radioMetros={resultado.radioToleranciaMetros || 150}
                 userLat={userLocation?.latitud ?? null}
                 userLng={userLocation?.longitud ?? null}
-                razonSocial={resultado.razonSocial || `Sucursal #${resultado.numeroCompania}`}
+                razonSocial={
+                  resultado.razonSocial ||
+                  `Sucursal #${resultado.numeroCompania}`
+                }
                 nombreEmpleado={resultado.nombre || resultado.rfc || ""}
               />
             </div>
 
-            <div className={`relative z-10 bg-white ${isDesktop ? 'w-[400px] h-full border-l border-slate-200 shadow-2xl' : 'flex-1 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] -mt-6'} flex flex-col shrink-0 overflow-hidden`}>
+            <div
+              className={`relative z-10 bg-white ${isDesktop ? "w-[400px] h-full border-l border-slate-200 shadow-2xl" : "flex-1 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] -mt-6"} flex flex-col shrink-0 overflow-hidden`}
+            >
               <InfoEmpleado
                 currentTime={currentTime}
                 resultado={resultado}
@@ -209,7 +221,6 @@ export const Home: React.FC = () => {
           message={alertState.message}
           buttons={["Aceptar"]}
         />
-
 
         <IonToast
           isOpen={toastState.show}

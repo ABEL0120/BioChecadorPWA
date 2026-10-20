@@ -1,9 +1,18 @@
-import { Redirect, Route } from "react-router-dom";
+import { Redirect, Route, useLocation } from "react-router-dom";
+import { useAuthSession } from "./context/AuthSessionContext";
+import { biometricService } from "./services/biometricService";
+import {
+  isPushSupported,
+  verificarEstadoPushServidor,
+  limpiarSuscripcionLocal,
+  guardarConfiguracionLocal,
+} from "./services/pushNotificationService";
 import {
   IonApp,
   IonRouterOutlet,
   setupIonicReact,
   IonAlert,
+  IonSplitPane,
 } from "@ionic/react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { IonReactRouter } from "@ionic/react-router";
@@ -13,20 +22,32 @@ import { PwaInstallGate } from "./components/PwaInstallGate";
 import { AuthSessionProvider } from "./context/AuthSessionContext";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { MenuLateral } from "./components/MenuLateral";
+import "@ionic/react/css/core.css";
+import "@ionic/react/css/normalize.css";
+import "@ionic/react/css/structure.css";
+import "@ionic/react/css/typography.css";
+import "@ionic/react/css/padding.css";
+import "@ionic/react/css/float-elements.css";
+import "@ionic/react/css/text-alignment.css";
+import "@ionic/react/css/text-transformation.css";
+import "@ionic/react/css/flex-utils.css";
+import "@ionic/react/css/display.css";
+import "./theme/variables.css";
 
 const HorarioPage = lazy(() => import("./pages/HorarioPage"));
 const HistorialPage = lazy(() => import("./pages/HistorialPage"));
 const SolicitudesPage = lazy(() => import("./pages/SolicitudesPage"));
+
 const VacacionesScreen = lazy(() =>
   import("./pages/VacacionesScreen").then((m) => ({
     default: m.VacacionesScreen,
   })),
 );
+
 const PermisosScreen = lazy(() =>
-  import("./pages/PermisosScreen").then((m) => ({
-    default: m.PermisosScreen,
-  })),
+  import("./pages/PermisosScreen").then((m) => ({ default: m.PermisosScreen })),
 );
+
 const RecibosPage = lazy(() => import("./pages/RecibosPage"));
 const NotificacionesPage = lazy(() => import("./pages/NotificacionesPage"));
 
@@ -40,20 +61,6 @@ const PageLoadingFallback: React.FC = () => (
     </div>
   </div>
 );
-import { IonSplitPane } from "@ionic/react";
-
-import "@ionic/react/css/core.css";
-import "@ionic/react/css/normalize.css";
-import "@ionic/react/css/structure.css";
-import "@ionic/react/css/typography.css";
-import "@ionic/react/css/padding.css";
-import "@ionic/react/css/float-elements.css";
-import "@ionic/react/css/text-alignment.css";
-import "@ionic/react/css/text-transformation.css";
-import "@ionic/react/css/flex-utils.css";
-import "@ionic/react/css/display.css";
-
-import "./theme/variables.css";
 
 setupIonicReact();
 
@@ -71,16 +78,13 @@ function UpdatePrompt() {
         };
         setInterval(checkUpdate, 15000);
         document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") {
-            checkUpdate();
-          }
+          if (document.visibilityState === "visible") checkUpdate();
         });
         window.addEventListener("focus", checkUpdate);
       }
     },
-    onRegisterError(error) {},
+    onRegisterError() {},
   });
-
   return (
     <IonAlert
       isOpen={needRefresh}
@@ -102,6 +106,33 @@ function UpdatePrompt() {
   );
 }
 
+const PushStatusWatcher: React.FC = () => {
+  const location = useLocation();
+  const { user, login } = useAuthSession();
+  const lastPath = React.useRef<string>("");
+  React.useEffect(() => {
+    if (!user?.rfc || !isPushSupported()) return;
+    if (lastPath.current === location.pathname) return;
+    lastPath.current = location.pathname;
+    const deviceName = biometricService.getDeviceName();
+    verificarEstadoPushServidor(user.rfc, deviceName)
+      .then((activo) => {
+        if (!activo) {
+          limpiarSuscripcionLocal().catch(() => {});
+          login({ tieneSuscripcionPush: false });
+        } else {
+          guardarConfiguracionLocal({
+            activo: true,
+            desactivadoManualmente: false,
+          });
+          login({ tieneSuscripcionPush: true });
+        }
+      })
+      .catch(() => {});
+  }, [location.pathname, user?.rfc]);
+  return null;
+};
+
 const App: React.FC = () => (
   <IonApp>
     <UpdatePrompt />
@@ -109,6 +140,7 @@ const App: React.FC = () => (
     <AuthSessionProvider>
       <PwaInstallGate>
         <IonReactRouter>
+          <PushStatusWatcher />
           <IonSplitPane contentId="main-content">
             <MenuLateral />
             <IonRouterOutlet id="main-content">
