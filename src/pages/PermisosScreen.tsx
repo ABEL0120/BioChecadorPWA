@@ -16,8 +16,11 @@ import { usePermisos } from "../hooks/usePermisos";
 import { useAuthSession } from "../context/AuthSessionContext";
 import { PermisoEmpleado } from "../services/permisosService";
 import { SinSesionMensaje } from "../components/SinSesionMensaje";
+import { ModuloSinConexion } from "../components/ModuloSinConexion";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 export const PermisosScreen: React.FC = () => {
+  const isOnline = useNetworkStatus();
   const [activeTab, setActiveTab] = useState<"historial" | "nuevo">(
     "historial",
   );
@@ -46,11 +49,11 @@ export const PermisosScreen: React.FC = () => {
   } = usePermisos();
 
   useEffect(() => {
-    if (user?.numeroCompania && user?.numeroEmpleado) {
+    if (isOnline && user?.numeroCompania && user?.numeroEmpleado) {
       fetchDatosIniciales(user.numeroCompania, user.numeroEmpleado);
       fetchHistorial(user.numeroCompania, user.numeroEmpleado);
     }
-  }, [user, fetchDatosIniciales, fetchHistorial]);
+  }, [user, isOnline, fetchDatosIniciales, fetchHistorial]);
 
   const onCancelRequest = async (numero: number) => {
     if (!user?.numeroCompania || !user?.numeroEmpleado) {
@@ -124,6 +127,8 @@ export const PermisosScreen: React.FC = () => {
       <IonContent className="bg-slate-50">
         {!user ? (
           <SinSesionMensaje />
+        ) : !isOnline ? (
+          <ModuloSinConexion modulo="Permisos" />
         ) : (
           <div className="px-3.5 sm:px-6 py-4 sm:py-6 pb-24 max-w-xl mx-auto">
             {error && (

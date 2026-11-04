@@ -15,8 +15,11 @@ import {
 import { shieldCheckmarkOutline } from "ionicons/icons";
 import { useSolicitudes } from "../hooks/useSolicitudes";
 import { SinSesionMensaje } from "../components/SinSesionMensaje";
+import { ModuloSinConexion } from "../components/ModuloSinConexion";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 const SolicitudesPage: React.FC = () => {
+  const isOnline = useNetworkStatus();
   const {
     user,
     motivoSolicitud,
@@ -52,6 +55,32 @@ const SolicitudesPage: React.FC = () => {
           style={{ "--background": "#f8fafc" }}
         >
           <SinSesionMensaje />
+        </IonContent>
+      </IonPage>
+    );
+  }
+
+  if (!isOnline) {
+    return (
+      <IonPage>
+        <IonHeader className="ion-no-border">
+          <IonToolbar
+            className="bg-white/80 backdrop-blur-lg border-b border-slate-100"
+            style={{ "--background": "transparent" }}
+          >
+            <IonButtons slot="start" className="pl-1">
+              <IonMenuButton className="text-slate-700" />
+            </IonButtons>
+            <IonTitle className="font-black tracking-tight text-slate-800 text-lg">
+              Reinicio Biometría
+            </IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent
+          className="ion-padding"
+          style={{ "--background": "#f8fafc" }}
+        >
+          <ModuloSinConexion modulo="Solicitudes" />
         </IonContent>
       </IonPage>
     );

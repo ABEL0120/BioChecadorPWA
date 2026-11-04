@@ -21,9 +21,12 @@ export const OfflineBanner: React.FC = () => {
   if (!isOffline) return null;
 
   return (
-    <div className="fixed top-0 left-0 w-full z-50 bg-amber-500 text-white text-center py-1.5 text-xs font-bold shadow-md flex items-center justify-center space-x-2">
-      <IonIcon icon={cloudOfflineOutline} className="text-base" />
-      <span>Modo sin conexión. Los marcajes se guardarán localmente.</span>
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-30 bg-amber-500/95 text-white py-1 px-4 text-[11px] font-bold rounded-full shadow-lg flex items-center gap-1.5 pointer-events-none max-w-[85%] text-center justify-center border border-amber-400/80 backdrop-blur-sm select-none"
+      style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}
+    >
+      <IonIcon icon={cloudOfflineOutline} className="text-sm shrink-0" />
+      <span className="truncate">Modo sin conexión (guardado local)</span>
     </div>
   );
 };

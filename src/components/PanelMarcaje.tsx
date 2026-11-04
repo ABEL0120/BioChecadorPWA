@@ -141,7 +141,7 @@ export const PanelMarcaje: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="flex flex-col gap-3 relative z-10">
+          <div className="flex flex-col gap-3 relative z-10 pb-14">
             {siguienteMovimiento.map((mov) => (
               <button
                 key={mov}

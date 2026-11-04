@@ -38,6 +38,13 @@ export const MenuLateral: React.FC = () => {
   const cooldownRef = React.useRef(0);
 
   React.useEffect(() => {
+    if (!user) {
+      setCooldown(0);
+      cooldownRef.current = 0;
+    }
+  }, [user]);
+
+  React.useEffect(() => {
     let interval: any;
     if (cooldown > 0) {
       interval = setInterval(() => {

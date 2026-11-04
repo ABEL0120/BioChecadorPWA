@@ -14,6 +14,10 @@ export const useSolicitudes = () => {
   const [toastInfo, setToastInfo] = useState<{ show: boolean; message: string; color: string } | null>(null);
 
   useEffect(() => {
+    if (!navigator.onLine) {
+      setLoadingStatus(false);
+      return;
+    }
     const checkEstatus = async () => {
       if (!user || !user.rfc) return;
       setLoadingStatus(true);

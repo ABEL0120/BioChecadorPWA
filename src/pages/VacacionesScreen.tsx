@@ -16,8 +16,11 @@ import { useVacaciones } from "../hooks/useVacaciones";
 import { useAuthSession } from "../context/AuthSessionContext";
 import { SolicitudVacacion } from "../services/vacacionesService";
 import { SinSesionMensaje } from "../components/SinSesionMensaje";
+import { ModuloSinConexion } from "../components/ModuloSinConexion";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 export const VacacionesScreen: React.FC = () => {
+  const isOnline = useNetworkStatus();
   const [activeTab, setActiveTab] = useState<"historial" | "nueva">(
     "historial",
   );
@@ -45,11 +48,11 @@ export const VacacionesScreen: React.FC = () => {
   } = useVacaciones();
 
   useEffect(() => {
-    if (user?.numeroCompania && user?.numeroEmpleado) {
+    if (isOnline && user?.numeroCompania && user?.numeroEmpleado) {
       fetchDatosIniciales(user.numeroCompania, user.numeroEmpleado);
       fetchHistorial(user.numeroCompania, user.numeroEmpleado);
     }
-  }, [user, fetchDatosIniciales, fetchHistorial]);
+  }, [user, isOnline, fetchDatosIniciales, fetchHistorial]);
 
   const onCancelRequest = async (numero: number, comentarios: string) => {
     if (!user?.numeroCompania || !user?.numeroEmpleado)
@@ -137,6 +140,8 @@ export const VacacionesScreen: React.FC = () => {
       <IonContent className="bg-slate-50">
         {!user ? (
           <SinSesionMensaje />
+        ) : !isOnline ? (
+          <ModuloSinConexion modulo="Vacaciones" />
         ) : (
           <div className="px-3.5 sm:px-6 py-4 sm:py-6 pb-24 max-w-xl mx-auto">
             {error && (

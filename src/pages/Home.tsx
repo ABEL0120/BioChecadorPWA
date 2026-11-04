@@ -30,6 +30,7 @@ import { useLocation } from "react-router-dom";
 
 export const Home: React.FC = () => {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -73,6 +74,12 @@ export const Home: React.FC = () => {
     cooldownSeconds,
   } = useHome();
 
+  useEffect(() => {
+    if (!resultado) {
+      setShowLogoutAlert(false);
+    }
+  }, [resultado]);
+
   const currentTime = useReloj();
 
   const formatMovementLabel = (mov?: string) => {
@@ -111,22 +118,32 @@ export const Home: React.FC = () => {
           {resultado && (
             <IonButtons slot="end" className="absolute right-2">
               <button
-                id="btn-cambiar-empleado"
+                type="button"
+                onClick={() => setShowLogoutAlert(true)}
                 className="text-[11px] font-black tracking-widest uppercase text-red-500 bg-red-50 border border-red-200 px-4 py-2 rounded-xl shadow-sm hover:bg-red-100 hover:text-red-600 transition-all active:scale-95"
               >
                 Salir
               </button>
-              <IonAlert
-                trigger="btn-cambiar-empleado"
-                header="¿Cambiar Empleado?"
-                message="Volverás a la pantalla de búsqueda. ¿Deseas continuar?"
-                buttons={[
-                  { text: "Cancelar", role: "cancel" },
-                  { text: "Aceptar", role: "confirm", handler: () => logout() },
-                ]}
-              />
             </IonButtons>
           )}
+
+          <IonAlert
+            isOpen={showLogoutAlert && Boolean(resultado)}
+            onDidDismiss={() => setShowLogoutAlert(false)}
+            header="¿Cambiar Empleado?"
+            message="Volverás a la pantalla de búsqueda. ¿Deseas continuar?"
+            buttons={[
+              { text: "Cancelar", role: "cancel" },
+              {
+                text: "Aceptar",
+                role: "confirm",
+                handler: () => {
+                  setShowLogoutAlert(false);
+                  logout();
+                },
+              },
+            ]}
+          />
         </IonToolbar>
       </IonHeader>
 

@@ -72,15 +72,21 @@ function UpdatePrompt() {
     onRegisteredSW(swUrl, r) {
       if (r) {
         const checkUpdate = () => {
-          if (!(!r.installing && navigator)) return;
-          if ("connection" in navigator && !navigator.onLine) return;
-          r.update();
+          if (typeof navigator === "undefined" || !navigator.onLine) return;
+          if (!r.active || r.installing || r.waiting) return;
+          try {
+            const p = r.update();
+            if (p && typeof p.catch === "function") {
+              p.catch(() => {});
+            }
+          } catch {}
         };
-        setInterval(checkUpdate, 15000);
-        document.addEventListener("visibilitychange", () => {
+        const intervalId = setInterval(checkUpdate, 60000);
+        const handleVisibility = () => {
           if (document.visibilityState === "visible") checkUpdate();
-        });
-        window.addEventListener("focus", checkUpdate);
+        };
+        document.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("online", checkUpdate);
       }
     },
     onRegisterError() {},

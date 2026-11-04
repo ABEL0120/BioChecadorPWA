@@ -5,6 +5,7 @@ import {
   warningOutline,
   fingerPrintOutline,
   timeOutline,
+  cloudOfflineOutline,
 } from "ionicons/icons";
 import { MovimientoPermitido } from "../hooks/useValidacionMarcaje";
 
@@ -44,7 +45,7 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
   formatMovementLabel,
 }) => {
   return (
-    <div className="px-6 pt-6 flex flex-col gap-6 flex-1 pb-6 overflow-y-auto">
+    <div className="px-6 pt-6 flex flex-col gap-6 flex-1 pb-16 overflow-y-auto">
       <div className="text-center shrink-0">
         <div className="text-4xl font-black text-slate-800 tracking-tighter tabular-nums drop-shadow-sm">
           {currentTime || "00:00:00"}
@@ -77,6 +78,23 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
           <span>{resultado?.tieneBiometria ? "Biometría" : "Pendiente"}</span>
         </div>
       </div>
+
+      {hasPendingOffline && (
+        <div className="bg-amber-50 rounded-[20px] p-4 border border-amber-200 flex items-center gap-3 text-amber-800 shrink-0">
+          <IonIcon
+            icon={cloudOfflineOutline}
+            className="text-xl shrink-0 text-amber-600"
+          />
+          <div className="flex flex-col">
+            <span className="text-xs font-bold leading-tight">
+              Marcaje offline pendiente
+            </span>
+            <span className="text-[10px] font-medium text-amber-700">
+              Se enviará automáticamente al reconectar
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="bg-slate-50 rounded-[20px] p-5 border border-slate-200 shadow-sm flex flex-col gap-2 relative overflow-hidden shrink-0">
         <div className="flex justify-between items-center relative z-10">
@@ -125,7 +143,12 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
         </div>
       )}
 
-      <div className="mt-auto shrink-0 pt-4 flex flex-col gap-3">
+      <div
+        className="mt-auto shrink-0 pt-4 flex flex-col gap-3 pb-24"
+        style={{
+          paddingBottom: "max(6rem, calc(env(safe-area-inset-bottom, 0px) + 5rem))",
+        }}
+      >
         {resultado?.tieneBiometria ? (
           siguienteMovimiento.map((mov) => (
             <button

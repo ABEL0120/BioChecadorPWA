@@ -10,6 +10,7 @@ import {
   desuscribirNotificaciones,
   verificarEstadoPushServidor,
   limpiarSuscripcionLocal,
+  obtenerConfiguracionLocal,
 } from "../services/pushNotificationService";
 
 export const useNotificaciones = () => {
@@ -48,6 +49,12 @@ export const useNotificaciones = () => {
         return;
       }
       if (user?.rfc) {
+        if (!navigator.onLine) {
+          const config = obtenerConfiguracionLocal();
+          setActivo(Boolean(config.activo));
+          setLoading(false);
+          return;
+        }
         const deviceName = biometricService.getDeviceName();
         const tieneEnServidor = await verificarEstadoPushServidor(
           user.rfc,

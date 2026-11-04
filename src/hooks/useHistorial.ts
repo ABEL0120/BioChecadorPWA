@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuthSession } from "../context/AuthSessionContext";
 import { checadorApi } from "../api/checadorApi";
-import { timeService } from "../services/timeService";
 import { HistoricoAMNResponse, TurnoDetalleDto } from "../types/api";
 import { DayData } from "../components/DiaHistorialItem";
+import { offlineSyncService } from "../services/offlineSyncService";
+import { timeService } from "../services/timeService";
 
 export const useHistorial = () => {
   const { user } = useAuthSession();
@@ -27,8 +28,51 @@ export const useHistorial = () => {
   const [endDateStr, setEndDateStr] = useState<string>(formatDateToYMD(hoy));
 
   useEffect(() => {
+    if (!user || !user.rfc) return;
+    const cacheKey = `historial_cache_${user.rfc}`;
+    const cached = localStorage.getItem(cacheKey);
+
+    const loadPendingPunches = async (baseList: HistoricoAMNResponse[]) => {
+      try {
+        const pending = await offlineSyncService.obtenerChecadasPendientes();
+        const userPending = pending.filter((p) => p.rfc === user.rfc);
+        if (userPending.length === 0) return baseList;
+
+        const pendingMapped: HistoricoAMNResponse[] = userPending.map(
+          (p, idx) => ({
+            numero: -(idx + 1),
+            rfc: p.rfc,
+            numeroCompania: user.numeroCompania || 0,
+            fechaHora: p.fechaHora || p.FechaHora || new Date().toISOString(),
+            latitud: p.latitud,
+            longitud: p.longitud,
+            dispositivoNombre: p.dispositivo,
+            tipoMovimiento: p.tipoMovimiento,
+          }),
+        );
+
+        return [...baseList, ...pendingMapped];
+      } catch {
+        return baseList;
+      }
+    };
+
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          loadPendingPunches(parsed).then((merged) => setHistorico(merged));
+        }
+      } catch {}
+    }
+
+    if (!navigator.onLine) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const fetchHistorico = async () => {
-      if (!user) return;
       setLoading(true);
       setError(null);
       try {
@@ -37,23 +81,29 @@ export const useHistorial = () => {
           user.numeroCompania || 0,
         );
         if (res.success && res.data) {
-          setHistorico(res.data);
-        } else {
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(res.data));
+          } catch {}
+          const merged = await loadPendingPunches(res.data);
+          setHistorico(merged);
+        } else if (!cached) {
           setError(res.message || "Error al cargar historial");
         }
       } catch (err: unknown) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Error de red al cargar historial",
-        );
+        if (!cached) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Error de red al cargar historial",
+          );
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchHistorico();
-  }, [user]);
+  }, [user?.rfc, user?.numeroCompania]);
 
   const { horarioArray, secuenciaDias } = useMemo(() => {
     if (!user || !user.horario)
@@ -64,7 +114,6 @@ export const useHistorial = () => {
     if (Array.isArray(user.horario)) {
       arr = user.horario as TurnoDetalleDto[];
     } else if (typeof user.horario === "object" && user.horario !== null) {
-      // Avoid explicit 'any' by using Record
       const h = user.horario as unknown as Record<string, unknown>;
       if (typeof h.secuenciaDias === "string") sec = h.secuenciaDias;
       if (Array.isArray(h.dias)) {
@@ -149,9 +198,11 @@ export const useHistorial = () => {
         );
         if (!entradaReg) {
           const ahora = timeService.now();
-          if (fechaStr === formatDateToYMD(ahora) || fechaActual > ahora)
+          if (fechaStr === formatDateToYMD(ahora) || fechaActual > ahora) {
             estado = "INCOMPLETO";
-          else estado = "FALTA";
+          } else {
+            estado = "FALTA";
+          }
         } else {
           if (turno && turno.entrada) {
             const [hE, mE] = turno.entrada.split(":").map(Number);
@@ -186,10 +237,12 @@ export const useHistorial = () => {
           minutosRetardo,
         });
       }
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
+
     return daysList.reverse();
-  }, [startDateStr, endDateStr, historico, horarioArray, user, secuenciaDias]);
+  }, [startDateStr, endDateStr, user, historico, horarioArray, secuenciaDias]);
 
   return {
     user,

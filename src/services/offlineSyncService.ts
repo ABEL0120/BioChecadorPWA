@@ -9,63 +9,115 @@ export interface PendingPunch extends MarcarAsistenciaRequest {
   timestamp: number;
 }
 
-// Configurar instancia específica para la aplicación
 const offlineStore = localforage.createInstance({
   name: "BioChecadorPWA",
-  storeName: "offline_sync"
+  storeName: "offline_sync",
 });
 
 export const offlineSyncService = {
-  guardarChecadaLocal: async (punch: MarcarAsistenciaRequest): Promise<void> => {
+  guardarChecadaLocal: async (
+    punch: MarcarAsistenciaRequest,
+  ): Promise<void> => {
+    const fecha = punch.fechaHora || timeService.nowIsoLocal();
+    const newPunch: PendingPunch = {
+      ...punch,
+      fechaHora: fecha,
+      FechaHora: fecha,
+      id: Date.now() + Math.random(),
+      timestamp: Date.now(),
+    };
+
+    let existing: PendingPunch[] = [];
     try {
-      const existing = await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
-      const fecha = punch.fechaHora || timeService.nowIsoLocal();
-      const newPunch: PendingPunch = {
-        ...punch,
-        fechaHora: fecha,
-        FechaHora: fecha,
-        id: Date.now() + Math.random(),
-        timestamp: Date.now(),
-      };
-      
-      existing.push(newPunch);
-      await offlineStore.setItem(PENDING_PUNCHES_KEY, existing);
-    } catch (error) {
-      throw error;
+      existing =
+        (await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY)) || [];
+    } catch {
+      try {
+        const raw = localStorage.getItem(PENDING_PUNCHES_KEY);
+        existing = raw ? JSON.parse(raw) : [];
+      } catch {}
     }
+
+    if (!existing || !Array.isArray(existing)) {
+      existing = [];
+    }
+
+    existing.push(newPunch);
+
+    try {
+      await offlineStore.setItem(PENDING_PUNCHES_KEY, existing);
+    } catch {}
+
+    try {
+      localStorage.setItem(PENDING_PUNCHES_KEY, JSON.stringify(existing));
+    } catch {}
   },
 
   obtenerChecadasPendientes: async (): Promise<PendingPunch[]> => {
     try {
-      return await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
-    } catch (error) {
-      return [];
-    }
+      const items =
+        await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY);
+      if (items && Array.isArray(items) && items.length > 0) {
+        return items;
+      }
+    } catch {}
+
+    try {
+      const raw = localStorage.getItem(PENDING_PUNCHES_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+
+    return [];
   },
 
   eliminarChecada: async (id: number): Promise<void> => {
+    let existing: PendingPunch[] = [];
     try {
-      const existing = await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY) || [];
-      const filtered = existing.filter(punch => punch.id !== id);
-      await offlineStore.setItem(PENDING_PUNCHES_KEY, filtered);
-    } catch (error) {
-      throw error;
+      existing =
+        (await offlineStore.getItem<PendingPunch[]>(PENDING_PUNCHES_KEY)) || [];
+    } catch {
+      try {
+        const raw = localStorage.getItem(PENDING_PUNCHES_KEY);
+        existing = raw ? JSON.parse(raw) : [];
+      } catch {}
     }
+
+    if (!existing || !Array.isArray(existing)) {
+      existing = [];
+    }
+
+    const filtered = existing.filter((punch) => punch.id !== id);
+
+    try {
+      await offlineStore.setItem(PENDING_PUNCHES_KEY, filtered);
+    } catch {}
+
+    try {
+      localStorage.setItem(PENDING_PUNCHES_KEY, JSON.stringify(filtered));
+    } catch {}
   },
 
-  // Funciones nuevas para guardar configuración (como el RFC autoguardado)
   guardarConfiguracion: async (key: string, value: any): Promise<void> => {
     try {
       await offlineStore.setItem(key, value);
-    } catch (error) {
-    }
+    } catch {}
+    try {
+      localStorage.setItem(`offline_cfg_${key}`, JSON.stringify(value));
+    } catch {}
   },
 
   obtenerConfiguracion: async <T>(key: string): Promise<T | null> => {
     try {
-      return await offlineStore.getItem<T>(key);
-    } catch (error) {
-      return null;
-    }
-  }
+      const val = await offlineStore.getItem<T>(key);
+      if (val !== null && val !== undefined) return val;
+    } catch {}
+    try {
+      const raw = localStorage.getItem(`offline_cfg_${key}`);
+      if (raw !== null) return JSON.parse(raw);
+    } catch {}
+    return null;
+  },
 };

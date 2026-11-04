@@ -21,8 +21,11 @@ import {
 } from "ionicons/icons";
 import { SinSesionMensaje } from "../components/SinSesionMensaje";
 import { useNotificaciones } from "../hooks/useNotificaciones";
+import { ModuloSinConexion } from "../components/ModuloSinConexion";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 const NotificacionesPage: React.FC = () => {
+  const isOnline = useNetworkStatus();
   const {
     user,
     loading,
@@ -51,6 +54,8 @@ const NotificacionesPage: React.FC = () => {
         <div className="max-w-xl mx-auto space-y-4 sm:space-y-6 py-1 sm:py-2">
           {!user ? (
             <SinSesionMensaje />
+          ) : !isOnline ? (
+            <ModuloSinConexion modulo="Recordatorios de Turno" />
           ) : loading ? (
             <div className="flex justify-center p-12">
               <IonSpinner name="crescent" className="text-blue-600 w-8 h-8" />

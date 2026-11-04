@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   locationService,
   GpsLocationResult,
-  getDistanceFromLatLonInMeters,
 } from "../services/locationService";
 import { biometricService } from "../services/biometricService";
 import { offlineSyncService } from "../services/offlineSyncService";
@@ -17,7 +16,6 @@ import { formatError } from "../utils/errorHandler";
 import { RegistroChecadaResponseDto } from "../types/api";
 import {
   isPushSupported,
-  isSubscribed,
   suscribirNotificaciones,
   obtenerConfiguracionLocal,
   guardarConfiguracionLocal,
@@ -38,6 +36,7 @@ export const useHome = () => {
         }
       });
   }, []);
+
   const [enrolling, setEnrolling] = useState<boolean>(false);
   const [marking, setMarking] = useState<boolean>(false);
   const [showReenrollButton, setShowReenrollButton] = useState<boolean>(false);
@@ -49,7 +48,7 @@ export const useHome = () => {
   const {
     user: resultado,
     login,
-    logout,
+    logout: authLogout,
     refresh,
     isLoadingSession,
   } = useAuthSession();
@@ -118,14 +117,16 @@ export const useHome = () => {
       if (resultado.tieneSuscripcionPush === false) {
         limpiarSuscripcionLocal().catch(() => {});
         if (config.desactivadoManualmente || perm === "denied") return;
-        if (perm === "default")
+        if (perm === "default") {
           solicitarPermisoNotificacionesNativo(resultado.rfc);
+        }
       } else {
-        if (!config.activo)
+        if (!config.activo) {
           guardarConfiguracionLocal({
             activo: true,
             desactivadoManualmente: false,
           });
+        }
       }
     }
   }, [
@@ -180,70 +181,101 @@ export const useHome = () => {
     }
 
     const key = `checador_cooldown_${resultado.rfc}`;
-    const storedUntil = localStorage.getItem(key);
-    if (storedUntil) {
-      const until = parseInt(storedUntil, 10);
-      const remaining = Math.ceil((until - Date.now()) / 1000);
-      if (remaining > 0) {
-        setCooldownSeconds(remaining);
-      } else {
-        localStorage.removeItem(key);
-        setCooldownSeconds(0);
-      }
-    } else {
-      setCooldownSeconds(0);
-    }
-  }, [resultado?.rfc]);
 
-  useEffect(() => {
-    if (cooldownSeconds <= 0) return;
-
-    const timer = setInterval(() => {
-      setCooldownSeconds((prev) => {
-        if (prev <= 1) {
-          if (resultado?.rfc) {
-            localStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
-          }
-          return 0;
+    const updateCooldown = () => {
+      let storedUntil = sessionStorage.getItem(key);
+      if (!storedUntil) {
+        storedUntil = localStorage.getItem(key);
+        if (storedUntil) {
+          sessionStorage.setItem(key, storedUntil);
+          localStorage.removeItem(key);
         }
-        return prev - 1;
-      });
-    }, 1000);
+      }
 
-    return () => clearInterval(timer);
-  }, [cooldownSeconds, resultado?.rfc]);
+      if (!storedUntil) {
+        setCooldownSeconds((prev) => (prev === 0 ? prev : 0));
+        return;
+      }
+
+      const until = parseInt(storedUntil, 10);
+      if (isNaN(until)) {
+        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
+        setCooldownSeconds((prev) => (prev === 0 ? prev : 0));
+        return;
+      }
+
+      const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      if (remaining <= 0) {
+        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
+        setCooldownSeconds((prev) => (prev === 0 ? prev : 0));
+        return;
+      }
+
+      setCooldownSeconds(remaining);
+    };
+
+    updateCooldown();
+
+    const interval = setInterval(updateCooldown, 1000);
+
+    const handleResume = () => {
+      updateCooldown();
+    };
+
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("focus", handleResume);
+    window.addEventListener("pageshow", handleResume);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("focus", handleResume);
+      window.removeEventListener("pageshow", handleResume);
+    };
+  }, [resultado?.rfc]);
 
   const iniciarCooldownMarcaje = (rfcStr: string) => {
     const totalSegundos = 60;
     const until = Date.now() + totalSegundos * 1000;
-    localStorage.setItem(`checador_cooldown_${rfcStr}`, until.toString());
+    sessionStorage.setItem(`checador_cooldown_${rfcStr}`, until.toString());
     setCooldownSeconds(totalSegundos);
   };
 
   useEffect(() => {
     const checkPending = async () => {
-      if (resultado && !navigator.onLine) {
-        try {
-          const pending = await offlineSyncService.obtenerChecadasPendientes();
-          setHasPendingOffline(pending.some((p) => p.rfc === resultado.rfc));
-        } catch (e) {}
-      } else {
+      if (!resultado?.rfc) {
+        setHasPendingOffline(false);
+        return;
+      }
+      try {
+        const pending = await offlineSyncService.obtenerChecadasPendientes();
+        const has = pending.some((p) => p.rfc === resultado.rfc);
+        setHasPendingOffline(has);
+      } catch {
         setHasPendingOffline(false);
       }
     };
 
     checkPending();
 
-    const handleOffline = () => checkPending();
-    const handleOnline = () => setHasPendingOffline(false);
-
-    window.addEventListener("offline", handleOffline);
-    window.addEventListener("online", handleOnline);
-    return () => {
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("online", handleOnline);
+    const handleStateChange = () => {
+      checkPending();
     };
-  }, [resultado]);
+
+    window.addEventListener("offline", handleStateChange);
+    window.addEventListener("online", handleStateChange);
+    window.addEventListener("offline-sync-completed", handleStateChange);
+    window.addEventListener("storage", handleStateChange);
+
+    return () => {
+      window.removeEventListener("offline", handleStateChange);
+      window.removeEventListener("online", handleStateChange);
+      window.removeEventListener("offline-sync-completed", handleStateChange);
+      window.removeEventListener("storage", handleStateChange);
+    };
+  }, [resultado?.rfc]);
 
   useEffect(() => {
     biometricService.isPlatformAvailable().then((available) => {
@@ -302,11 +334,9 @@ export const useHome = () => {
       if (response.success && response.data && response.data.existe) {
         offlineSyncService.guardarConfiguracion("last_rfc", cleanRfc);
 
-        // Revisar si ya mandó solicitud recientemente (24h)
         const pendingKey = `solicitud_pendiente_${cleanRfc}`;
         const savedTimestamp = localStorage.getItem(pendingKey);
         if (!response.data.tieneBiometria) {
-          // Si ya no tiene biometría, significa que el admin la aprobó y lo borró
           localStorage.removeItem(pendingKey);
           setHasPendingSolicitud(false);
         } else if (savedTimestamp) {
@@ -332,8 +362,9 @@ export const useHome = () => {
           const perm = getNotificationPermission();
           if (response.data.tieneSuscripcionPush === false) {
             limpiarSuscripcionLocal().catch(() => {});
-            if (!config.desactivadoManualmente && perm === "default")
+            if (!config.desactivadoManualmente && perm === "default") {
               solicitarPermisoNotificacionesNativo(cleanRfc);
+            }
           }
         }
       } else {
@@ -410,8 +441,57 @@ export const useHome = () => {
     setMarking(true);
     setRegistroResult(null);
 
+    const guardarOffline = async (
+      fechaHora: string,
+      loc: GpsLocationResult,
+      credId: string,
+      disp: string,
+    ) => {
+      await offlineSyncService.guardarChecadaLocal({
+        rfc: resultado.rfc!,
+        credentialId: credId,
+        latitud: loc.latitud,
+        longitud: loc.longitud,
+        dispositivo: disp,
+        tipoMovimiento: movimientoSeleccionado,
+        fechaHora,
+        FechaHora: fechaHora,
+      });
+
+      setRegistroResult({
+        dentroDeRango: true,
+        distanciaMetros: 0,
+        fechaHora,
+        mensaje: "Guardado localmente. Se sincronizará al conectarse a red.",
+        nombre: resultado.nombre || resultado.rfc || "",
+        rfc: resultado.rfc!,
+        empresa: resultado.razonSocial || "Tu Empresa",
+      });
+
+      setHasPendingOffline(true);
+      iniciarCooldownMarcaje(resultado.rfc!);
+
+      const huboSalidaOffline =
+        Boolean(resultado.tieneSalidaHoy) ||
+        movimientoSeleccionado === "SALIDA" ||
+        movimientoSeleccionado.includes("SALIDA") ||
+        (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
+
+      login({
+        ultimoMovimientoHoy: movimientoSeleccionado,
+        tieneSalidaHoy: huboSalidaOffline,
+      });
+
+      setAlertState({
+        show: true,
+        message: `Asistencia (${movimientoSeleccionado}) guardada localmente (Modo Offline). Se sincronizará automáticamente cuando haya conexión.`,
+        title: "Éxito (Modo Offline)",
+      });
+    };
+
     try {
-      let location: GpsLocationResult = userLocation ||
+      let location: GpsLocationResult =
+        userLocation ||
         locationService.getUltimaUbicacionConocida() || {
           latitud: 0,
           longitud: 0,
@@ -426,7 +506,6 @@ export const useHome = () => {
             setUserLocation(fresh);
           }
         } catch {
-          // Si el GPS no responde o no hay permisos, no bloquear la checada
           location = { latitud: 0, longitud: 0, accuracy: 0 };
         }
       } else {
@@ -447,30 +526,6 @@ export const useHome = () => {
       let credentialId = "BIOMETRICO_NATIVO";
       let dispositivo = "Dispositivo Móvil";
 
-      /*
-      let canceladoPorSalto = false;
-      let watchId: number | null = null;
-      const isWindows = /Windows/.test(navigator.userAgent);
-      
-      if (navigator.geolocation && resultado.trabajoRemoto !== "S" && !isWindows) {
-        watchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            const dist = getDistanceFromLatLonInMeters(
-              location.latitud,
-              location.longitud,
-              pos.coords.latitude,
-              pos.coords.longitude
-            );
-            if (dist > 500) {
-              canceladoPorSalto = true;
-            }
-          },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 0 }
-        );
-      }
-      */
-
       if (biometricAvailable) {
         const authData = await biometricService.autenticarBiometriaNativa(
           resultado.rfc,
@@ -479,23 +534,20 @@ export const useHome = () => {
         dispositivo = authData.dispositivo;
       }
 
-      // Fecha y hora exacta generada en este mismo instante tras validar datos biométricos
       const fechaHoraMarcaje = timeService.nowIsoLocal();
 
-      /*
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-
-      if (canceladoPorSalto) {
-        throw new Error(
-          "Se detectó un cambio brusco de ubicación durante el escaneo biométrico (Posible Fake GPS rebotando). Intenta de nuevo."
-        );
-      }
-      */
-
       if (!navigator.onLine) {
-        await offlineSyncService.guardarChecadaLocal({
+        await guardarOffline(
+          fechaHoraMarcaje,
+          location,
+          credentialId,
+          dispositivo,
+        );
+        return;
+      }
+
+      try {
+        const response = await checadorApi.marcar({
           rfc: resultado.rfc,
           credentialId,
           latitud: location.latitud,
@@ -506,78 +558,64 @@ export const useHome = () => {
           FechaHora: fechaHoraMarcaje,
         });
 
-        setRegistroResult({
-          dentroDeRango: true,
-          distanciaMetros: 0,
-          fechaHora: fechaHoraMarcaje,
-          mensaje: "Guardado localmente. Se sincronizará al conectarse a red.",
-          nombre: resultado.nombre || resultado.rfc || "",
-          rfc: resultado.rfc,
-          empresa: resultado.razonSocial || "Tu Empresa",
-        });
-        setHasPendingOffline(true);
-        iniciarCooldownMarcaje(resultado.rfc);
-        const huboSalidaOffline =
-          Boolean(resultado.tieneSalidaHoy) ||
-          movimientoSeleccionado === "SALIDA" ||
-          movimientoSeleccionado.includes("SALIDA") ||
-          (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
+        if (response.data) {
+          iniciarCooldownMarcaje(resultado.rfc);
+          setRegistroResult(response.data);
+          const huboSalidaOnline =
+            Boolean(resultado.tieneSalidaHoy) ||
+            movimientoSeleccionado === "SALIDA" ||
+            movimientoSeleccionado.includes("SALIDA") ||
+            (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
 
-        login({
-          ultimoMovimientoHoy: movimientoSeleccionado,
-          tieneSalidaHoy: huboSalidaOffline,
-        });
-        setAlertState({
-          show: true,
-          message: `Asistencia (${movimientoSeleccionado}) guardada localmente (Modo Offline).`,
-          title: "Éxito",
-        });
-        setMarking(false);
-        return;
-      }
+          login({
+            ultimoMovimientoHoy: movimientoSeleccionado,
+            tieneSalidaHoy: huboSalidaOnline,
+          });
+          setAlertState({
+            show: true,
+            message:
+              response.message ||
+              `¡Asistencia (${movimientoSeleccionado}) registrada exitosamente!`,
+            title:
+              response.data.dentroDeRango || resultado.trabajoRemoto === "S"
+                ? "Éxito"
+                : "Fuera de Rango",
+          });
+        } else {
+          setAlertState({
+            show: true,
+            message:
+              response.message ||
+              "No se pudo registrar el marcaje de asistencia.",
+            title: "Error",
+          });
+        }
+      } catch (apiErr: any) {
+        const isNetworkError =
+          !navigator.onLine ||
+          Boolean(apiErr?.isAxiosError && !apiErr?.response) ||
+          !apiErr?.response ||
+          apiErr?.code === "ERR_NETWORK" ||
+          apiErr?.code === "ECONNABORTED" ||
+          String(apiErr?.message || "")
+            .toLowerCase()
+            .includes("network error") ||
+          String(apiErr?.message || "")
+            .toLowerCase()
+            .includes("timeout") ||
+          (apiErr?.response && apiErr.response.status >= 500);
 
-      const response = await checadorApi.marcar({
-        rfc: resultado.rfc,
-        credentialId,
-        latitud: location.latitud,
-        longitud: location.longitud,
-        dispositivo,
-        tipoMovimiento: movimientoSeleccionado,
-        fechaHora: fechaHoraMarcaje,
-        FechaHora: fechaHoraMarcaje,
-      });
+        if (isNetworkError) {
+          await guardarOffline(
+            fechaHoraMarcaje,
+            location,
+            credentialId,
+            dispositivo,
+          );
+          return;
+        }
 
-      if (response.data) {
-        iniciarCooldownMarcaje(resultado.rfc);
-        setRegistroResult(response.data);
-        const huboSalidaOnline =
-          Boolean(resultado.tieneSalidaHoy) ||
-          movimientoSeleccionado === "SALIDA" ||
-          movimientoSeleccionado.includes("SALIDA") ||
-          (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
-
-        login({
-          ultimoMovimientoHoy: movimientoSeleccionado,
-          tieneSalidaHoy: huboSalidaOnline,
-        });
-        setAlertState({
-          show: true,
-          message:
-            response.message ||
-            `¡Asistencia (${movimientoSeleccionado}) registrada exitosamente!`,
-          title:
-            response.data.dentroDeRango || resultado.trabajoRemoto === "S"
-              ? "Éxito"
-              : "Fuera de Rango",
-        });
-      } else {
-        setAlertState({
-          show: true,
-          message:
-            response.message ||
-            "No se pudo registrar el marcaje de asistencia.",
-          title: "Error",
-        });
+        throw apiErr;
       }
     } catch (err: any) {
       const msg = formatError(err, "Error al registrar la asistencia.");
@@ -647,9 +685,23 @@ export const useHome = () => {
     }
   };
 
+  const logout = () => {
+    if (resultado?.rfc) {
+      sessionStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
+      localStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
+    }
+    setCooldownSeconds(0);
+    authLogout();
+  };
+
   const limpiarBusqueda = () => {
+    if (resultado?.rfc) {
+      sessionStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
+      localStorage.removeItem(`checador_cooldown_${resultado.rfc}`);
+    }
+    setCooldownSeconds(0);
     setRfc("");
-    logout();
+    authLogout();
     setRegistroResult(null);
     setErrorMsg(null);
     setUserLocation(null);

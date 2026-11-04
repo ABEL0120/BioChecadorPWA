@@ -25,10 +25,13 @@ import {
 import { useAuthSession } from "../context/AuthSessionContext";
 import { useRecibosNomina } from "../hooks/useRecibosNomina";
 import { SinSesionMensaje } from "../components/SinSesionMensaje";
+import { ModuloSinConexion } from "../components/ModuloSinConexion";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 const PAGE_SIZE = 15;
 
 export const RecibosPage: React.FC = () => {
+  const isOnline = useNetworkStatus();
   const { user } = useAuthSession();
   const [presentToast] = useIonToast();
   const {
@@ -62,7 +65,7 @@ export const RecibosPage: React.FC = () => {
   }, [recibos]);
 
   useEffect(() => {
-    if (user?.numeroCompania && user?.numeroEmpleado) {
+    if (isOnline && user?.numeroCompania && user?.numeroEmpleado) {
       if (filtrarPorFechas) {
         const fIni = fechaInicial ? fechaInicial.replace(/-/g, "/") : undefined;
         const fFin = fechaFinal ? fechaFinal.replace(/-/g, "/") : undefined;
@@ -71,7 +74,7 @@ export const RecibosPage: React.FC = () => {
         fetchRecibos(user.numeroCompania, user.numeroEmpleado, undefined, undefined, user.rfcCompania);
       }
     }
-  }, [user]);
+  }, [user, isOnline]);
 
   const handleBuscar = () => {
     if (!user?.numeroCompania || !user?.numeroEmpleado) return;
@@ -148,6 +151,8 @@ export const RecibosPage: React.FC = () => {
       <IonContent className="bg-slate-50">
         {!user ? (
           <SinSesionMensaje />
+        ) : !isOnline ? (
+          <ModuloSinConexion modulo="Recibos de Nómina" />
         ) : (
           <div className="px-3.5 sm:px-6 py-4 sm:py-6 pb-24 max-w-xl mx-auto space-y-4">
           {error && (
@@ -267,14 +272,6 @@ export const RecibosPage: React.FC = () => {
                 </p>
               </div>
             </div>
-
-            {/* <button
-              onClick={handleBuscar}
-              disabled={loading}
-              className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition-all"
-            >
-              <IonIcon icon={refreshOutline} className="text-base" />
-            </button> */}
           </div>
 
           {loading ? (
