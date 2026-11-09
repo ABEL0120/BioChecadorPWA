@@ -12,11 +12,17 @@ import { HorarioDto, TurnoDetalleDto } from "../types/api";
 interface HorarioSemanalProps {
   horario: TurnoDetalleDto[] | HorarioDto;
   nombreEmpleado?: string;
+  razonSocial?: string;
+  rfc?: string;
+  numeroEmpleado?: number;
 }
 
 export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
   horario,
   nombreEmpleado,
+  razonSocial,
+  rfc,
+  numeroEmpleado,
 }) => {
   const [vista, setVista] = useState<"tabla" | "tarjetas">("tabla");
   const [colapsado, setColapsado] = useState(false);
@@ -116,15 +122,30 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
   };
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      {nombreEmpleado && (
-        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-600 text-white font-black text-sm sm:text-base flex items-center justify-center shrink-0 shadow-sm">
-            {nombreEmpleado.substring(0, 2).toUpperCase()}
+    <div className="space-y-4">
+      {(nombreEmpleado || razonSocial) && (
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+              {(nombreEmpleado || "EM").substring(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <h2 className="font-black text-sm sm:text-base text-slate-800 leading-tight">
+                {nombreEmpleado || "Empleado"}
+              </h2>
+              <div className="flex items-center gap-2 mt-1 text-[11px] font-bold text-slate-400">
+                {numeroEmpleado && <span>#{numeroEmpleado}</span>}
+                {numeroEmpleado && rfc && <span>•</span>}
+                {rfc && <span className="font-mono uppercase">{rfc}</span>}
+              </div>
+            </div>
           </div>
-          <h2 className="font-black text-sm sm:text-lg text-slate-800 leading-tight tracking-tight">
-            {nombreEmpleado}
-          </h2>
+          {razonSocial && (
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-slate-50 border border-slate-200/80 text-[11px] font-bold text-slate-600 self-start sm:self-auto">
+              <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+              <span className="truncate max-w-[280px]">{razonSocial}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -192,15 +213,14 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
             }}
             className="overflow-x-auto"
           >
-            <table className="w-full text-left border-collapse min-w-[620px] sm:min-w-[780px]">
+            <table className="w-full text-left border-collapse min-w-[560px] sm:min-w-[680px]">
               <thead>
-                <tr className="bg-slate-50/50">
+                <tr className="border-b border-slate-200/80 bg-slate-50/90 text-slate-700 font-black text-xs uppercase tracking-wider">
                   <th
-                    rowSpan={2}
-                    className={`sticky left-0 z-20 bg-slate-50/95 backdrop-blur-sm text-center align-middle text-slate-800 font-black text-xs uppercase tracking-widest border-b border-r border-slate-200/80 shadow-[1px_0_0_0_rgba(226,232,240,0.8)] transition-all duration-200 ${
+                    className={`sticky left-0 z-20 bg-slate-50/95 backdrop-blur-sm text-center align-middle border-b border-r border-slate-200/80 shadow-[1px_0_0_0_rgba(226,232,240,0.8)] transition-all duration-200 py-3.5 ${
                       colapsado
                         ? "w-14 min-w-[56px] max-w-[56px] px-1"
-                        : "w-44 sm:w-48 px-3"
+                        : "w-40 sm:w-48 px-3"
                     }`}
                   >
                     {colapsado ? (
@@ -214,37 +234,17 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                       "Día"
                     )}
                   </th>
-                  <th
-                    colSpan={3}
-                    className="text-slate-800 font-black text-xs uppercase tracking-widest text-center py-3 px-3 border-b border-r border-slate-200/80 bg-slate-50"
-                  >
-                    Jornada Laboral
-                  </th>
-                  <th
-                    colSpan={3}
-                    className="text-slate-800 font-black text-xs uppercase tracking-widest text-center py-3 px-3 border-b border-slate-200/80 bg-slate-50"
-                  >
-                    Hora de Comida
-                  </th>
-                </tr>
-                <tr className="border-b border-slate-200/80 bg-slate-50/80 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                  <th className="py-2.5 px-2 text-center w-22 sm:w-28">
+                  <th className="py-3.5 px-3 text-center border-b border-slate-200/80 w-28 sm:w-36">
                     Entrada
                   </th>
-                  <th className="py-2.5 px-2 text-center w-22 sm:w-28">
+                  <th className="py-3.5 px-3 text-center border-b border-slate-200/80 w-28 sm:w-36">
+                    Salida a Comer
+                  </th>
+                  <th className="py-3.5 px-3 text-center border-b border-slate-200/80 w-28 sm:w-36">
+                    Regreso Comer
+                  </th>
+                  <th className="py-3.5 px-3 text-center border-b border-slate-200/80 w-28 sm:w-36">
                     Salida
-                  </th>
-                  <th className="py-2.5 px-2 text-center border-r border-slate-200/80 w-22 sm:w-28">
-                    Tolerancia
-                  </th>
-                  <th className="py-2.5 px-2 text-center w-22 sm:w-28">
-                    Salida
-                  </th>
-                  <th className="py-2.5 px-2 text-center w-22 sm:w-28">
-                    Regreso
-                  </th>
-                  <th className="py-2.5 px-2 text-center w-22 sm:w-28">
-                    Tolerancia
                   </th>
                 </tr>
               </thead>
@@ -266,7 +266,7 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                         className={`sticky left-0 z-10 p-0 border-r border-slate-200/80 transition-all duration-200 shadow-[1px_0_0_0_rgba(226,232,240,0.8)] align-middle ${
                           colapsado
                             ? "w-14 min-w-[56px] max-w-[56px]"
-                            : "w-44 sm:w-48"
+                            : "w-40 sm:w-48"
                         } ${
                           isHoy
                             ? "bg-blue-50/95 backdrop-blur-sm border-l-4 border-l-blue-600"
@@ -329,11 +329,18 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                         )}
                       </td>
 
-                      <td className="py-2.5 sm:py-3 px-2 text-center">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">
                         {vals.esLaborable ? (
-                          <span className="inline-flex items-center justify-center min-w-[64px] sm:min-w-[76px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
-                            {vals.entrada}
-                          </span>
+                          <div className="inline-flex flex-col items-center justify-center">
+                            <span className="inline-flex items-center justify-center min-w-[70px] sm:min-w-[80px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
+                              {vals.entrada}
+                            </span>
+                            {vals.toleranciaEntrada > 0 && (
+                              <span className="text-[9px] text-slate-400 font-mono font-medium mt-0.5">
+                                tol. {vals.toleranciaEntrada}m
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-slate-300 font-mono text-sm font-medium">
                             —
@@ -341,35 +348,9 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                         )}
                       </td>
 
-                      <td className="py-2.5 sm:py-3 px-2 text-center">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">
                         {vals.esLaborable ? (
-                          <span className="inline-flex items-center justify-center min-w-[64px] sm:min-w-[76px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
-                            {vals.salida}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300 font-mono text-sm font-medium">
-                            —
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-2.5 sm:py-3 px-2 text-center border-r border-slate-200/80">
-                        {vals.esLaborable ? (
-                          <span className="inline-flex items-center justify-center min-w-[50px] sm:min-w-[60px] h-6 sm:h-7 px-1.5 rounded-md bg-slate-100/80 text-slate-500 font-mono text-[10px] sm:text-[11px] font-semibold">
-                            {vals.toleranciaEntrada > 0
-                              ? `${vals.toleranciaEntrada} min`
-                              : "0 min"}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300 font-mono text-sm font-medium">
-                            —
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-2.5 sm:py-3 px-2 text-center">
-                        {vals.esLaborable ? (
-                          <span className="inline-flex items-center justify-center min-w-[64px] sm:min-w-[76px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
+                          <span className="inline-flex items-center justify-center min-w-[70px] sm:min-w-[80px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
                             {vals.salidaComida}
                           </span>
                         ) : (
@@ -379,11 +360,18 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                         )}
                       </td>
 
-                      <td className="py-2.5 sm:py-3 px-2 text-center">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">
                         {vals.esLaborable ? (
-                          <span className="inline-flex items-center justify-center min-w-[64px] sm:min-w-[76px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
-                            {vals.regresoComida}
-                          </span>
+                          <div className="inline-flex flex-col items-center justify-center">
+                            <span className="inline-flex items-center justify-center min-w-[70px] sm:min-w-[80px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
+                              {vals.regresoComida}
+                            </span>
+                            {vals.tieneComida && vals.toleranciaComida > 0 && (
+                              <span className="text-[9px] text-slate-400 font-mono font-medium mt-0.5">
+                                tol. {vals.toleranciaComida}m
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-slate-300 font-mono text-sm font-medium">
                             —
@@ -391,12 +379,10 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                         )}
                       </td>
 
-                      <td className="py-2.5 sm:py-3 px-2 text-center">
+                      <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">
                         {vals.esLaborable ? (
-                          <span className="inline-flex items-center justify-center min-w-[50px] sm:min-w-[60px] h-6 sm:h-7 px-1.5 rounded-md bg-slate-100/80 text-slate-500 font-mono text-[10px] sm:text-[11px] font-semibold">
-                            {vals.toleranciaComida > 0
-                              ? `${vals.toleranciaComida} min`
-                              : "0 min"}
+                          <span className="inline-flex items-center justify-center min-w-[70px] sm:min-w-[80px] h-7 sm:h-8 px-2 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 font-mono font-bold text-xs sm:text-[13px] tracking-wider shadow-xs">
+                            {vals.salida}
                           </span>
                         ) : (
                           <span className="text-slate-300 font-mono text-sm font-medium">
@@ -440,16 +426,16 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                       >
                         {(dia.diaNombre || "D").substring(0, 2).toUpperCase()}
                       </div>
-                      {/* <div>
+                      <div>
                         <h4 className="font-black text-slate-800 text-sm sm:text-base capitalize tracking-tight">
                           {dia.diaNombre || `Día ${dia.diaIndice}`}
                         </h4>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {/* <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           {vals.esLaborable
                             ? "Turno Laborable"
                             : "Día de Descanso"}
-                        </span>
-                      </div> */}
+                        </span> */}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span
@@ -465,64 +451,56 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                   </div>
 
                   {vals.esLaborable ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3.5">
-                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3 flex flex-col gap-2.5">
-                        <div className="flex items-center justify-between text-slate-800 font-black text-[10px] uppercase tracking-widest">
-                          <span>Jornada Laboral</span>
-                          <span className="text-[9px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
-                            Tol: {vals.toleranciaEntrada} min
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3.5">
+                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-2.5 text-center shadow-2xs">
+                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                          Entrada
+                        </span>
+                        <span className="font-mono font-black text-slate-800 text-sm">
+                          {vals.entrada}
+                        </span>
+                        {vals.toleranciaEntrada > 0 && (
+                          <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                            tol. {vals.toleranciaEntrada}m
                           </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 pt-0.5">
-                          <div className="bg-white rounded-lg p-2.5 border border-slate-200 text-center shadow-2xs">
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                              Entrada
-                            </span>
-                            <span className="font-mono font-black text-slate-800 text-sm">
-                              {vals.entrada}
-                            </span>
-                          </div>
-                          <div className="bg-white rounded-lg p-2.5 border border-slate-200 text-center shadow-2xs">
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                              Salida
-                            </span>
-                            <span className="font-mono font-black text-slate-800 text-sm">
-                              {vals.salida}
-                            </span>
-                          </div>
-                        </div>
+                        )}
                       </div>
 
-                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3 flex flex-col gap-2.5">
-                        <div className="flex items-center justify-between text-slate-800 font-black text-[10px] uppercase tracking-widest">
-                          <span>Hora de Comida</span>
-                          <span className="text-[9px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
-                            Tol: {vals.toleranciaComida} min
+                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-2.5 text-center shadow-2xs">
+                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                          Salida a Comer
+                        </span>
+                        <span className="font-mono font-black text-slate-800 text-sm">
+                          {vals.salidaComida}
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-2.5 text-center shadow-2xs">
+                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                          Regreso Comer
+                        </span>
+                        <span className="font-mono font-black text-slate-800 text-sm">
+                          {vals.regresoComida}
+                        </span>
+                        {vals.tieneComida && vals.toleranciaComida > 0 && (
+                          <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                            tol. {vals.toleranciaComida}m
                           </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 pt-0.5">
-                          <div className="bg-white rounded-lg p-2.5 border border-slate-200 text-center shadow-2xs">
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                              Salida
-                            </span>
-                            <span className="font-mono font-black text-slate-800 text-sm">
-                              {vals.salidaComida}
-                            </span>
-                          </div>
-                          <div className="bg-white rounded-lg p-2.5 border border-slate-200 text-center shadow-2xs">
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                              Regreso
-                            </span>
-                            <span className="font-mono font-black text-slate-800 text-sm">
-                              {vals.regresoComida}
-                            </span>
-                          </div>
-                        </div>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-2.5 text-center shadow-2xs">
+                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                          Salida
+                        </span>
+                        <span className="font-mono font-black text-slate-800 text-sm">
+                          {vals.salida}
+                        </span>
                       </div>
                     </div>
                   ) : (
                     <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-center gap-2 text-slate-400 text-xs font-bold">
-                      <IonIcon icon={moonOutline} className="text-lg" />
+                      <IonIcon icon={moonOutline} className="text-base" />
                       <span>Día de descanso oficial.</span>
                     </div>
                   )}
@@ -532,12 +510,12 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
           </div>
         )}
 
-        {/* <div className="p-3.5 sm:p-5 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2.5 text-slate-500 text-xs font-medium">
+        {/* <div className="p-4 sm:p-5 bg-slate-50/60 border-t border-slate-100 flex items-center gap-2 text-slate-500 text-xs font-medium">
           <IonIcon
             icon={informationCircleOutline}
-            className="text-lg text-blue-500 shrink-0"
+            className="text-base text-blue-500 shrink-0"
           />
-          <span className="leading-relaxed">
+          <span>
             La tolerancia de entrada y comida son minutos de cortesía oficiales
             antes de considerar retardo.
           </span>
