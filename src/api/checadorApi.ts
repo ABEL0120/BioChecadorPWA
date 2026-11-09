@@ -48,19 +48,31 @@ export const checadorApi = {
         horario: raw.horario ?? raw.Horario,
       };
 
+      const normalizeDia = (h: any) => ({
+        ...h,
+        diaIndice: h.diaIndice ?? h.DiaIndice,
+        diaNombre: h.diaNombre ?? h.DiaNombre,
+        esLaborable: h.esLaborable ?? h.EsLaborable,
+        entrada: h.entrada ?? h.Entrada,
+        salida: h.salida ?? h.Salida,
+        toleranciaEntradaMinutos:
+          h.toleranciaEntradaMinutos ?? h.ToleranciaEntradaMinutos,
+        salidaComida: h.salidaComida ?? h.SalidaComida,
+        regresoComida: h.regresoComida ?? h.RegresoComida,
+        toleranciaComidaMinutos:
+          h.toleranciaComidaMinutos ?? h.ToleranciaComidaMinutos,
+      });
+
       if (Array.isArray(response.data.data.horario)) {
-        response.data.data.horario = response.data.data.horario.map(
-          (h: any) => ({
-            ...h,
-            diaIndice: h.diaIndice ?? h.DiaIndice,
-            diaNombre: h.diaNombre ?? h.DiaNombre,
-            esLaborable: h.esLaborable ?? h.EsLaborable,
-            entrada: h.entrada ?? h.Entrada,
-            salida: h.salida ?? h.Salida,
-            toleranciaEntradaMinutos:
-              h.toleranciaEntradaMinutos ?? h.ToleranciaEntradaMinutos,
-          }),
-        );
+        response.data.data.horario = response.data.data.horario.map(normalizeDia);
+      } else if (
+        response.data.data.horario &&
+        typeof response.data.data.horario === "object"
+      ) {
+        const rawHorario = response.data.data.horario as any;
+        if (Array.isArray(rawHorario.dias)) {
+          rawHorario.dias = rawHorario.dias.map(normalizeDia);
+        }
       }
     }
 

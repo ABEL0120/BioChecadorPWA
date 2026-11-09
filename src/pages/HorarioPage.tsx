@@ -29,9 +29,15 @@ const HorarioPage: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding" style={{ "--background": "#f8fafc" }}>
-        <div className="max-w-4xl mx-auto space-y-6 py-2 pb-20">
+        <div className="max-w-5xl mx-auto space-y-5 py-3 pb-24">
           {user ? (
-            <HorarioSemanal horario={user.horario || []} />
+            <HorarioSemanal
+              horario={user.horario || []}
+              nombreEmpleado={user.nombre}
+              // razonSocial={user.razonSocial}
+              // rfc={user.rfc}
+              // numeroEmpleado={user.numeroEmpleado}
+            />
           ) : (
             <SinSesionMensaje />
           )}
