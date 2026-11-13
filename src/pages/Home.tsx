@@ -20,18 +20,22 @@ import {
   lockClosedOutline,
   fingerPrintOutline,
   warningOutline,
+  qrCodeOutline,
 } from "ionicons/icons";
 import { useReloj } from "../hooks/useReloj";
 import { FormularioBusquedaEmpleado } from "../components/FormularioBusquedaEmpleado";
 import { GeofenceMap } from "../components/GeofenceMap";
 import { InfoEmpleado } from "../components/InfoEmpleado";
+import { PwaInstallHint } from "../components/PwaInstallHint";
 import { useHome } from "../hooks/useHome";
-import { useLocation } from "react-router-dom";
+import { useLocation, useHistory } from "react-router-dom";
+import { obtenerEstadoMovimientosHoy } from "../utils/movimientoEstadoHelper";
 
 export const Home: React.FC = () => {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const location = useLocation();
+  const history = useHistory();
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -87,11 +91,8 @@ export const Home: React.FC = () => {
     if (mov === "SALIDA_COMIDA") return "SALIDA A COMER";
     if (mov === "ENTRADA_COMIDA") return "REGRESO DE COMER";
     if (mov === "ENTRADA") {
-      const yaHaySalida = Boolean(
-        resultado?.tieneSalidaHoy ||
-        (resultado?.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA" ||
-        (resultado?.ultimoMovimientoHoy || "").toUpperCase().includes("SALIDA"),
-      );
+      const { tieneSalidaHoy: yaHaySalida } =
+        obtenerEstadoMovimientosHoy(resultado);
       if (yaHaySalida) return "VOLVER A ENTRAR";
     }
     return mov;
@@ -120,7 +121,7 @@ export const Home: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowLogoutAlert(true)}
-                className="text-[11px] font-black tracking-widest uppercase text-red-500 bg-red-50 border border-red-200 px-4 py-2 rounded-xl shadow-sm hover:bg-red-100 hover:text-red-600 transition-all active:scale-95"
+                className="text-[11px] font-black tracking-widest uppercase text-red-500 bg-red-50 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-100 hover:text-red-600 transition-all active:scale-95"
               >
                 Salir
               </button>
@@ -219,7 +220,24 @@ export const Home: React.FC = () => {
                 loading={loading}
                 handleVerificarRfc={handleVerificarRfc}
               />
+
+              <div className="relative my-6 flex items-center justify-center">
+                <div className="border-t border-slate-200 w-full" />
+                <span className="bg-white px-3 text-[11px] font-black text-slate-400 uppercase tracking-widest absolute">
+                  O checador físico
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => history.push("/checador-fisico")}
+                className="w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 border-2 border-dashed border-blue-300 bg-blue-50/50 text-blue-700 hover:bg-blue-100/60 active:scale-[0.98] flex items-center justify-center gap-3"
+              >
+                <IonIcon icon={qrCodeOutline} className="text-2xl text-blue-600" />
+                <span>Escanear QR de Checador Físico</span>
+              </button>
             </div>
+            <PwaInstallHint className="mt-4" />
           </div>
         )}
 
@@ -280,7 +298,7 @@ export const Home: React.FC = () => {
             <div className="mt-6 flex flex-col gap-3">
               <IonButton
                 expand="block"
-                className="h-12 m-0 font-bold text-sm shadow-sm rounded-xl"
+                className="h-12 m-0 font-bold text-sm rounded-xl"
                 onClick={enviarSolicitudReinicio}
                 disabled={enviandoSolicitud || !motivoSolicitud.trim()}
               >

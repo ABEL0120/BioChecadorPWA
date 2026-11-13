@@ -145,7 +145,7 @@ export const PermisosScreen: React.FC = () => {
                 }}
                 className={`flex-1 flex items-center justify-center h-12 min-h-12 text-xs sm:text-sm font-black uppercase tracking-wide transition-all duration-300 rounded-xl z-10 outline-none shrink-0 ${
                   activeTab === "historial"
-                    ? "bg-white text-blue-600 shadow-sm"
+                    ? "bg-white text-blue-600"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
@@ -155,7 +155,7 @@ export const PermisosScreen: React.FC = () => {
                 onClick={() => setActiveTab("nuevo")}
                 className={`flex-1 flex items-center justify-center h-12 min-h-12 text-xs sm:text-sm font-black uppercase tracking-wide transition-all duration-300 rounded-xl z-10 outline-none shrink-0 ${
                   activeTab === "nuevo"
-                    ? "bg-white text-blue-600 shadow-sm"
+                    ? "bg-white text-blue-600"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >

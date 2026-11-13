@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
     HISTORICO: "/checador/historico",
     SOLICITUD: "/checador/solicitud",
     ESTATUS_SOLICITUD: "/checador/estatus-solicitud",
+    CHECADOR_FISICO: "/checador/checador-fisico",
   },
   AUTH: {
     LOGIN: "/auth/login",

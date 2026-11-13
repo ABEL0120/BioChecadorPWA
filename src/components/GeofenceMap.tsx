@@ -69,7 +69,7 @@ const RecenterControl: React.FC<{ lat: number; lng: number }> = ({ lat, lng }) =
             e.stopPropagation();
             map.setView([lat, lng], 16, { animate: true });
           }}
-          className="bg-white text-blue-600 w-12 h-12 flex items-center justify-center rounded-2xl shadow-lg cursor-pointer hover:bg-slate-50 border border-slate-200 active:scale-95 transition-all"
+          className="bg-white text-blue-600 w-12 h-12 flex items-center justify-center rounded-2xl cursor-pointer hover:bg-slate-50 border border-slate-200 active:scale-95 transition-all"
           title="Enfocar mi ubicación"
         >
           <IonIcon icon={locateOutline} style={{ fontSize: '24px' }} />

@@ -55,7 +55,7 @@ export const SolicitudReinicioModal: React.FC<SolicitudReinicioModalProps> = ({
         <div className="mt-6 flex flex-col gap-3">
           <IonButton
             expand="block"
-            className="h-12 m-0 font-bold text-sm shadow-sm rounded-xl"
+            className="h-12 m-0 font-bold text-sm rounded-xl"
             onClick={enviarSolicitudReinicio}
             disabled={enviandoSolicitud || !motivoSolicitud.trim()}
           >

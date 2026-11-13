@@ -49,10 +49,10 @@ export const FormularioBusquedaEmpleado: React.FC<Props> = ({
         <button
           type="submit"
           disabled={loading || rfc.trim().length < 10}
-          className={`w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 shadow-sm flex items-center justify-center gap-2 ${
+          className={`w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
             loading || rfc.trim().length < 10
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98]"
+              : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"
           }`}
         >
           {loading ? (

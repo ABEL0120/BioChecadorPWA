@@ -4,6 +4,7 @@ import {
   startRegistration,
   startAuthentication,
 } from "@simplewebauthn/browser";
+import { ChecadorFisicoPasskeyPayload } from "../types/api";
 
 export interface BiometricEnrollmentResult {
   credentialId: string;
@@ -28,6 +29,23 @@ const bufferToBase64Url = (buffer: ArrayBuffer): string => {
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=/g, "");
+};
+
+const bufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
+const base64UrlToBase64 = (str: string): string => {
+  let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4) {
+    base64 += "=";
+  }
+  return base64;
 };
 
 const getDeviceName = (): string => {
@@ -66,50 +84,108 @@ export const biometricService = {
 
     const randomBuffer = new Uint8Array(32);
     crypto.getRandomValues(randomBuffer);
-    const challengeBase64 = bufferToBase64Url(randomBuffer.buffer);
 
     const userIdBytes = new TextEncoder().encode(rfc);
-    const userIdBase64 = bufferToBase64Url(userIdBytes.buffer);
 
-    const optionsJSON: any = {
-      challenge: challengeBase64,
-      rp: {
-        name: "Reloj Nomina 2026",
-        id: window.location.hostname,
-      },
-      user: {
-        id: userIdBase64,
-        name: rfc,
-        displayName: nombreEmpleado || rfc,
-      },
-      pubKeyCredParams: [
-        { alg: -7, type: "public-key" },
-        { alg: -257, type: "public-key" },
-      ],
-      authenticatorSelection: {
-        userVerification: "preferred",
-        residentKey: "preferred",
-      },
-      timeout: 60000,
-      attestation: "none",
-    };
+    try {
+      const credential = (await navigator.credentials.create({
+        publicKey: {
+          challenge: randomBuffer,
+          rp: {
+            name: "Reloj Nomina 2026",
+            id: window.location.hostname,
+          },
+          user: {
+            id: userIdBytes,
+            name: rfc,
+            displayName: nombreEmpleado || rfc,
+          },
+          pubKeyCredParams: [
+            { alg: -7, type: "public-key" },
+            { alg: -257, type: "public-key" },
+          ],
+          authenticatorSelection: {
+            userVerification: "preferred",
+            residentKey: "required",
+            requireResidentKey: true,
+          },
+          timeout: 60000,
+          attestation: "none",
+        },
+      })) as PublicKeyCredential | null;
 
-    const registrationResponse = await startRegistration({ optionsJSON });
+      if (!credential) {
+        throw new Error("No se pudo generar la credencial biométrica.");
+      }
 
-    const credentialId = registrationResponse.id;
-    const publicKey =
-      registrationResponse.response.publicKey ||
-      registrationResponse.response.attestationObject;
+      const credentialResponse = credential.response as AuthenticatorAttestationResponse;
+      let publicKeyBase64 = "";
 
-    const dispositivo = getDeviceName();
-    const userAgent = navigator.userAgent;
+      if (typeof credentialResponse.getPublicKey === "function") {
+        const spkiDer = credentialResponse.getPublicKey();
+        if (spkiDer) {
+          publicKeyBase64 = bufferToBase64(spkiDer);
+        }
+      }
 
-    return {
-      credentialId,
-      publicKey,
-      dispositivo,
-      userAgent,
-    };
+      if (!publicKeyBase64 && credentialResponse.attestationObject) {
+        publicKeyBase64 = bufferToBase64(credentialResponse.attestationObject);
+      }
+
+      return {
+        credentialId: credential.id,
+        publicKey: publicKeyBase64,
+        dispositivo: getDeviceName(),
+        userAgent: navigator.userAgent,
+      };
+    } catch (err: any) {
+      if (err.name === "NotAllowedError" || err.name === "AbortError") {
+        throw err;
+      }
+
+      const challengeBase64 = bufferToBase64Url(randomBuffer.buffer);
+      const userIdBase64 = bufferToBase64Url(userIdBytes.buffer);
+
+      const optionsJSON: any = {
+        challenge: challengeBase64,
+        rp: {
+          name: "Reloj Nomina 2026",
+          id: window.location.hostname,
+        },
+        user: {
+          id: userIdBase64,
+          name: rfc,
+          displayName: nombreEmpleado || rfc,
+        },
+        pubKeyCredParams: [
+          { alg: -7, type: "public-key" },
+          { alg: -257, type: "public-key" },
+        ],
+        authenticatorSelection: {
+          userVerification: "preferred",
+          residentKey: "required",
+          requireResidentKey: true,
+        },
+        timeout: 60000,
+        attestation: "none",
+      };
+
+      const registrationResponse = await startRegistration({ optionsJSON });
+
+      const credentialId = registrationResponse.id;
+      const rawPublicKey =
+        registrationResponse.response.publicKey ||
+        registrationResponse.response.attestationObject;
+
+      const publicKey = rawPublicKey ? base64UrlToBase64(rawPublicKey) : "";
+
+      return {
+        credentialId,
+        publicKey,
+        dispositivo: getDeviceName(),
+        userAgent: navigator.userAgent,
+      };
+    }
   },
 
   autenticarBiometriaNativa: async (
@@ -138,6 +214,48 @@ export const biometricService = {
       credentialId: authResponse.id,
       dispositivo: getDeviceName(),
       userAgent: navigator.userAgent,
+    };
+  },
+
+  obtenerAsercionChecadorFisico: async (
+    tokenChecadorFisico: string
+  ): Promise<ChecadorFisicoPasskeyPayload> => {
+    if (!browserSupportsWebAuthn()) {
+      throw new Error(
+        "Este dispositivo o navegador no soporta autenticación biométrica WebAuthn."
+      );
+    }
+
+    const challengeBytes = new TextEncoder().encode(tokenChecadorFisico);
+
+    const credential = (await navigator.credentials.get({
+      publicKey: {
+        challenge: challengeBytes,
+        rpId: window.location.hostname,
+        allowCredentials: [],
+        userVerification: "preferred",
+        timeout: 60000,
+      },
+    })) as PublicKeyCredential | null;
+
+    if (!credential) {
+      throw new Error("No se obtuvo credencial biométrica.");
+    }
+
+    const authResponse = credential.response as AuthenticatorAssertionResponse;
+
+    return {
+      id: credential.id,
+      rawId: bufferToBase64Url(credential.rawId),
+      type: "public-key",
+      response: {
+        authenticatorData: bufferToBase64Url(authResponse.authenticatorData),
+        clientDataJSON: bufferToBase64Url(authResponse.clientDataJSON),
+        signature: bufferToBase64Url(authResponse.signature),
+        userHandle: authResponse.userHandle
+          ? bufferToBase64Url(authResponse.userHandle)
+          : null,
+      },
     };
   },
 };

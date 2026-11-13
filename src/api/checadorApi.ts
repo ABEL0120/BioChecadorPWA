@@ -11,6 +11,8 @@ import {
   RegistroChecadaResponseDto,
   HistoricoAMNResponse,
   SolicitudCreacionDto,
+  ChecadorFisicoRequest,
+  ChecadorFisicoResponseDto,
 } from "../types/api";
 
 export const checadorApi = {
@@ -40,8 +42,7 @@ export const checadorApi = {
         radioToleranciaMetros:
           raw.radioToleranciaMetros ?? raw.RadioToleranciaMetros,
         ultimoMovimientoHoy: raw.ultimoMovimientoHoy ?? raw.UltimoMovimientoHoy,
-        //  trabajoRemoto: raw.trabajoRemoto ?? raw.TrabajoRemoto,
-        trabajoRemoto: "S", // CAMBIO TEMPORAL
+        trabajoRemoto: "S",
         tieneSuscripcionPush:
           raw.tieneSuscripcionPush ?? raw.TieneSuscripcionPush ?? false,
         numeroEmpleado: raw.numeroEmpleado ?? raw.NumeroEmpleado,
@@ -174,5 +175,15 @@ export const checadorApi = {
       }
       throw err;
     }
+  },
+
+  marcarChecadorFisico: async (
+    payload: ChecadorFisicoRequest,
+  ): Promise<ApiResponse<ChecadorFisicoResponseDto>> => {
+    const response = await apiClient.post<ApiResponse<ChecadorFisicoResponseDto>>(
+      API_ENDPOINTS.CHECADOR.CHECADOR_FISICO,
+      payload,
+    );
+    return response.data;
   },
 };

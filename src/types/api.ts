@@ -41,6 +41,7 @@ export interface EstadoEmpleadoDto {
   radioToleranciaMetros?: number;
   ultimoMovimientoHoy?: string;
   tieneSalidaHoy?: boolean;
+  fechaGuardadoLocal?: string;
   tieneSuscripcionPush?: boolean;
   horario?: HorarioDto | TurnoDetalleDto[];
   trabajoRemoto?: string;
@@ -120,4 +121,35 @@ export interface SolicitudCreacionDto {
   numeroCompania: number;
   motivo: string;
   tipoDispositivo: string;
+}
+
+export interface ChecadorFisicoPasskeyResponse {
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  userHandle: string | null;
+}
+
+export interface ChecadorFisicoPasskeyPayload {
+  id: string;
+  rawId: string;
+  type: string;
+  response: ChecadorFisicoPasskeyResponse;
+}
+
+export interface ChecadorFisicoRequest {
+  passkey: ChecadorFisicoPasskeyPayload;
+  tokenChecadorFisico: string;
+  tipoMovimientoOpcional?: "SALIDA_COMIDA" | "SALIDA" | null;
+  latitud: number;
+  longitud: number;
+  dispositivoNombre: string;
+}
+
+export interface ChecadorFisicoResponseDto {
+  requiereSeleccion: boolean;
+  rfc?: string;
+  opciones?: string[];
+  tipoMovimiento?: string;
+  fechaHora?: string;
 }

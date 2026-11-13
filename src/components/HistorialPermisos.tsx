@@ -105,7 +105,7 @@ export const HistorialPermisos: React.FC<HistorialPermisosProps> = ({
             onClick={() => setFiltroEstatus(status)}
             className={`flex-1 h-10 min-h-10 flex items-center justify-center px-1 text-[11px] font-black uppercase transition-all duration-200 rounded-xl outline-none shrink-0 truncate ${
               filtroEstatus === status
-                ? "bg-white text-slate-900 shadow-xs"
+                ? "bg-white text-slate-900"
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -193,7 +193,7 @@ export const HistorialPermisos: React.FC<HistorialPermisosProps> = ({
                     {onEditar && (
                       <button
                         onClick={() => onEditar(p)}
-                        className="flex items-center justify-center gap-2 flex-1 h-11 sm:h-12 min-h-11 px-3 rounded-2xl border border-blue-200/90 bg-blue-50/80 text-blue-600 text-xs sm:text-sm font-black hover:bg-blue-100 hover:border-blue-300 shadow-xs active:scale-[0.98] transition-all shrink-0"
+                        className="flex items-center justify-center gap-2 flex-1 h-11 sm:h-12 min-h-11 px-3 rounded-2xl border border-blue-200/90 bg-blue-50/80 text-blue-600 text-xs sm:text-sm font-black hover:bg-blue-100 hover:border-blue-300 active:scale-[0.98] transition-all shrink-0"
                       >
                         <IonIcon
                           icon={createOutline}
@@ -204,7 +204,7 @@ export const HistorialPermisos: React.FC<HistorialPermisosProps> = ({
                     )}
                     <button
                       onClick={() => setPermisoACancelar(p)}
-                      className="flex items-center justify-center gap-2 flex-1 h-11 sm:h-12 min-h-11 px-3 rounded-2xl border border-red-200/90 bg-red-50/80 text-red-600 text-xs sm:text-sm font-black hover:bg-red-100 hover:border-red-300 shadow-xs active:scale-[0.98] transition-all shrink-0"
+                      className="flex items-center justify-center gap-2 flex-1 h-11 sm:h-12 min-h-11 px-3 rounded-2xl border border-red-200/90 bg-red-50/80 text-red-600 text-xs sm:text-sm font-black hover:bg-red-100 hover:border-red-300 active:scale-[0.98] transition-all shrink-0"
                     >
                       <IonIcon
                         icon={trashOutline}

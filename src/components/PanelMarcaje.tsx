@@ -19,6 +19,7 @@ import { EstadoEmpleadoDto, RegistroChecadaResponseDto } from "../types/api";
 import { MovimientoPermitido } from "../hooks/useValidacionMarcaje";
 
 import { timeService } from "../services/timeService";
+import { obtenerEstadoMovimientosHoy } from "../utils/movimientoEstadoHelper";
 
 interface Props {
   resultado: EstadoEmpleadoDto;
@@ -151,8 +152,8 @@ export const PanelMarcaje: React.FC<Props> = ({
                   marking || (cooldownSeconds != null && cooldownSeconds > 0)
                     ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                     : mov.includes("COMIDA")
-                    ? "bg-orange-500 text-white hover:bg-orange-600 shadow-md hover:shadow-lg hover:shadow-orange-200 active:scale-[0.98]"
-                    : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg hover:shadow-emerald-200 active:scale-[0.98]"
+                    ? "bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98]"
+                    : "bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.98]"
                 }`}
               >
                 {marking ? (
@@ -167,12 +168,7 @@ export const PanelMarcaje: React.FC<Props> = ({
                     <IonIcon icon={fingerPrintOutline} className="text-xl" />
                     <span>
                       {mov === "ENTRADA" &&
-                      (resultado?.tieneSalidaHoy ||
-                        (resultado?.ultimoMovimientoHoy || "").toUpperCase() ===
-                          "SALIDA" ||
-                        (resultado?.ultimoMovimientoHoy || "")
-                          .toUpperCase()
-                          .includes("SALIDA"))
+                      obtenerEstadoMovimientosHoy(resultado).tieneSalidaHoy
                         ? "Volver a entrar"
                         : `Marcar ${formatMovementLabel(mov)}`}
                     </span>
@@ -199,7 +195,7 @@ export const PanelMarcaje: React.FC<Props> = ({
         <button
           disabled={enrolling}
           onClick={handleEnrolarBiometria}
-          className="w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 shadow-md hover:shadow-lg hover:shadow-amber-200 active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {enrolling ? (
             <IonSpinner name="crescent" className="w-5 h-5 text-white" />

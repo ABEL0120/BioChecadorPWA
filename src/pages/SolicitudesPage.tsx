@@ -162,10 +162,10 @@ const SolicitudesPage: React.FC = () => {
                   <button
                     onClick={enviarSolicitudReinicio}
                     disabled={enviandoSolicitud || !motivoSolicitud.trim()}
-                    className={`w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center shadow-sm ${
+                    className={`w-full h-14 rounded-2xl font-bold tracking-wide transition-all duration-300 flex items-center justify-center ${
                       enviandoSolicitud || !motivoSolicitud.trim()
                         ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98]"
+                        : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"
                     }`}
                   >
                     {enviandoSolicitud ? (

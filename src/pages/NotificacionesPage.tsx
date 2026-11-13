@@ -66,10 +66,10 @@ const NotificacionesPage: React.FC = () => {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     <div
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
                         activo
-                          ? "bg-emerald-600 text-white shadow-emerald-200"
-                          : "bg-blue-600 text-white shadow-blue-200"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-blue-600 text-white"
                       }`}
                     >
                       <IonIcon
@@ -180,7 +180,7 @@ const NotificacionesPage: React.FC = () => {
                         !user?.tieneBiometria
                       }
                       onClick={handleActivar}
-                      className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-wide shadow-lg shadow-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95"
+                      className="w-full h-12 sm:h-14 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 transition-all active:scale-95"
                     >
                       {subscribing ? (
                         <IonSpinner
@@ -202,7 +202,7 @@ const NotificacionesPage: React.FC = () => {
                       type="button"
                       disabled={subscribing}
                       onClick={handleDesactivar}
-                      className="w-full h-12 sm:h-14 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-wide shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                      className="w-full h-12 sm:h-14 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
                     >
                       {subscribing ? (
                         <IonSpinner

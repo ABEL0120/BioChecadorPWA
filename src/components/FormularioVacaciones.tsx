@@ -621,7 +621,7 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
             onClick={() => setMostrarCalendario(!mostrarCalendario)}
             className={`w-full p-3 sm:p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between gap-3 ${
               mostrarCalendario
-                ? "bg-white border-blue-200 shadow-xs ring-1 ring-blue-500/10"
+                ? "bg-white border-blue-200 ring-1 ring-blue-500/10"
                 : "bg-slate-50 hover:bg-slate-100/80 border-slate-200/80"
             }`}
           >
@@ -629,7 +629,7 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                   mostrarCalendario
-                    ? "bg-blue-600 text-white shadow-xs"
+                    ? "bg-blue-600 text-white"
                     : "bg-blue-100 text-blue-600"
                 }`}
               >
@@ -702,7 +702,7 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
           <button
             disabled={loadingSubmit || !calculoFechas}
             type="submit"
-            className="flex-1 h-13 sm:h-14 rounded-2xl font-black text-xs sm:text-sm tracking-wide transition-all duration-300 bg-amber-600 text-white hover:bg-amber-700 shadow-md hover:shadow-lg hover:shadow-amber-200 disabled:opacity-50 disabled:active:scale-100 active:scale-[0.98] flex items-center justify-center gap-2"
+            className="flex-1 h-13 sm:h-14 rounded-2xl font-black text-xs sm:text-sm tracking-wide transition-all duration-300 bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:active:scale-100 active:scale-[0.98] flex items-center justify-center gap-2"
           >
             {loadingSubmit ? (
               <IonSpinner name="crescent" className="w-5 h-5 text-white" />
@@ -717,7 +717,7 @@ export const FormularioVacaciones: React.FC<FormularioProps> = ({
         <button
           disabled={loadingSubmit || !calculoFechas}
           type="submit"
-          className="w-full mt-2 h-13 sm:h-14 rounded-2xl font-black text-sm tracking-wide transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg hover:shadow-blue-200 disabled:opacity-50 disabled:active:scale-100 active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full mt-2 h-13 sm:h-14 rounded-2xl font-black text-sm tracking-wide transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:active:scale-100 active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {loadingSubmit ? (
             <IonSpinner name="crescent" className="w-5 h-5 text-white" />

@@ -142,13 +142,13 @@ export const MiniCalendario: React.FC<MiniCalendarioProps> = ({
 
                 if (isRestringido) {
                   bgClass =
-                    "bg-red-500 text-white font-black shadow-md shadow-red-200 line-through";
+                    "bg-red-500 text-white font-black line-through";
                 } else if (isRet) {
                   bgClass =
-                    "bg-emerald-500 text-white font-black shadow-md shadow-emerald-200";
+                    "bg-emerald-500 text-white font-black";
                 } else if (inRange) {
                   bgClass =
-                    "bg-blue-500 text-white font-black shadow-md shadow-blue-200";
+                    "bg-blue-500 text-white font-black";
                   if (isStart) extraClass = "rounded-l-xl";
                   if (isEnd) extraClass = "rounded-r-xl";
                   if (!isStart && !isEnd) extraClass = "opacity-90";

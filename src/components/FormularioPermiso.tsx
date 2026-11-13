@@ -558,7 +558,7 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
             onClick={() => handleTipoDiaToggle(true)}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
               esMismoDia
-                ? "bg-white text-blue-600 shadow-xs"
+                ? "bg-white text-blue-600"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >
@@ -569,7 +569,7 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
             onClick={() => handleTipoDiaToggle(false)}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
               !esMismoDia
-                ? "bg-white text-blue-600 shadow-xs"
+                ? "bg-white text-blue-600"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >
@@ -622,14 +622,14 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
                 onClick={() => handleSelectTipoAusencia("llegar_tarde")}
                 className={`p-4 rounded-2xl transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[96px] sm:min-h-[105px] ${
                   tipoAusencia === "llegar_tarde"
-                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700 shadow-xs"
+                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700"
                     : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 transition-colors ${
                     tipoAusencia === "llegar_tarde"
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
@@ -645,14 +645,14 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
                 onClick={() => handleSelectTipoAusencia("salir_temprano")}
                 className={`p-4 rounded-2xl transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[96px] sm:min-h-[105px] ${
                   tipoAusencia === "salir_temprano"
-                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700 shadow-xs"
+                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700"
                     : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 transition-colors ${
                     tipoAusencia === "salir_temprano"
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
@@ -668,14 +668,14 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
                 onClick={() => handleSelectTipoAusencia("intermedio")}
                 className={`p-4 rounded-2xl transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[96px] sm:min-h-[105px] ${
                   tipoAusencia === "intermedio"
-                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700 shadow-xs"
+                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700"
                     : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 transition-colors ${
                     tipoAusencia === "intermedio"
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
@@ -691,14 +691,14 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
                 onClick={() => handleSelectTipoAusencia("todo_dia")}
                 className={`p-4 rounded-2xl transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[96px] sm:min-h-[105px] ${
                   tipoAusencia === "todo_dia"
-                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700 shadow-xs"
+                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700"
                     : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 transition-colors ${
                     tipoAusencia === "todo_dia"
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
@@ -714,14 +714,14 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
                 onClick={() => handleSelectTipoAusencia("manual")}
                 className={`col-span-2 p-3.5 sm:p-4 rounded-2xl transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[88px] ${
                   tipoAusencia === "manual"
-                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700 shadow-xs"
+                    ? "bg-blue-50/30 border-2 border-blue-500 text-blue-700"
                     : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 transition-colors ${
                     tipoAusencia === "manual"
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-blue-600 text-white"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
@@ -841,9 +841,9 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
             <button
               type="button"
               onClick={() => setMostrarCalendario(!mostrarCalendario)}
-              className={`w-full py-4 px-4.5 sm:py-5 sm:px-5 min-h-19 sm:min-h-20.5 rounded-2xl sm:rounded-3xl border transition-all text-left flex items-center justify-between gap-3.5 shadow-xs ${
+              className={`w-full py-4 px-4.5 sm:py-5 sm:px-5 min-h-19 sm:min-h-20.5 rounded-2xl sm:rounded-3xl border transition-all text-left flex items-center justify-between gap-3.5 ${
                 mostrarCalendario
-                  ? "bg-white border-blue-200 shadow-sm ring-1 ring-blue-500/10"
+                  ? "bg-white border-blue-200 ring-1 ring-blue-500/10"
                   : "bg-slate-50 hover:bg-slate-100/80 border-slate-200/80"
               }`}
             >
@@ -851,7 +851,7 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all ${
                     mostrarCalendario
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
+                      ? "bg-blue-600 text-white"
                       : "bg-blue-100/80 text-blue-600"
                   }`}
                 >
@@ -930,7 +930,7 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/20">
+              <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
                 {loadingCalculo ? (
                   <IonSpinner name="dots" className="w-5 h-5 text-white" />
                 ) : (
@@ -989,8 +989,8 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
               className={`flex-1 h-13 sm:h-14 rounded-2xl font-black text-xs sm:text-sm tracking-wide transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2 ${
                 loadingSubmit ||
                 (calculoTiempo !== null && !calculoTiempo.esValido)
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                  : "bg-amber-600 text-white hover:bg-amber-700 shadow-md hover:shadow-lg hover:shadow-amber-200"
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  : "bg-amber-600 text-white hover:bg-amber-700"
               }`}
             >
               {loadingSubmit ? (
@@ -1010,11 +1010,11 @@ export const FormularioPermiso: React.FC<FormularioPermisoProps> = ({
               loadingSubmit ||
               (calculoTiempo !== null && !calculoTiempo.esValido)
             }
-            className={`w-full h-13 sm:h-14 rounded-2xl font-black text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
+            className={`w-full h-13 sm:h-14 rounded-2xl font-black text-sm uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98] ${
               loadingSubmit ||
               (calculoTiempo !== null && !calculoTiempo.esValido)
-                ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/30"
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
           >
             {loadingSubmit ? (

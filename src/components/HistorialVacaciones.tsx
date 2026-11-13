@@ -194,7 +194,7 @@ export const HistorialVacaciones: React.FC<HistorialProps> = ({
                           </button>
                           <button
                             onClick={() => handleConfirmCancel(sol.numero)}
-                            className="flex-1 h-12 sm:h-13 rounded-2xl text-xs sm:text-sm font-black text-white bg-red-500 hover:bg-red-600 shadow-md shadow-red-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                            className="flex-1 h-12 sm:h-13 rounded-2xl text-xs sm:text-sm font-black text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                           >
                             Confirmar
                           </button>
@@ -205,7 +205,7 @@ export const HistorialVacaciones: React.FC<HistorialProps> = ({
                         {onEditar && (
                           <button
                             onClick={() => onEditar(sol)}
-                            className="flex items-center justify-center gap-2 flex-1 h-12 sm:h-13 px-4 rounded-2xl border border-blue-200/90 bg-blue-50/80 text-blue-600 text-sm font-black hover:bg-blue-100 hover:border-blue-300 shadow-xs active:scale-[0.98] transition-all"
+                            className="flex items-center justify-center gap-2 flex-1 h-12 sm:h-13 px-4 rounded-2xl border border-blue-200/90 bg-blue-50/80 text-blue-600 text-sm font-black hover:bg-blue-100 hover:border-blue-300 active:scale-[0.98] transition-all"
                           >
                             <IonIcon
                               icon={createOutline}
@@ -216,7 +216,7 @@ export const HistorialVacaciones: React.FC<HistorialProps> = ({
                         )}
                         <button
                           onClick={() => setCancelId(sol.numero)}
-                          className="flex items-center justify-center gap-2 flex-1 h-12 sm:h-13 px-4 rounded-2xl border border-red-200/90 bg-red-50/80 text-red-500 text-sm font-black hover:bg-red-100 hover:border-red-300 shadow-xs active:scale-[0.98] transition-all"
+                          className="flex items-center justify-center gap-2 flex-1 h-12 sm:h-13 px-4 rounded-2xl border border-red-200/90 bg-red-50/80 text-red-500 text-sm font-black hover:bg-red-100 hover:border-red-300 active:scale-[0.98] transition-all"
                         >
                           <IonIcon
                             icon={closeCircleOutline}

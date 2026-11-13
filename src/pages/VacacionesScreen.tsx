@@ -155,7 +155,7 @@ export const VacacionesScreen: React.FC = () => {
                 onClick={() => setActiveTab("historial")}
                 className={`flex-1 flex items-center justify-center py-3.5 min-h-12 text-sm font-bold uppercase transition-all duration-300 rounded-xl z-10 outline-none ${
                   activeTab === "historial"
-                    ? "bg-white text-blue-600 shadow-sm"
+                    ? "bg-white text-blue-600"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
@@ -165,7 +165,7 @@ export const VacacionesScreen: React.FC = () => {
                 onClick={() => setActiveTab("nueva")}
                 className={`flex-1 flex items-center justify-center py-3.5 min-h-12 text-sm font-bold uppercase transition-all duration-300 rounded-xl z-10 outline-none ${
                   activeTab === "nueva"
-                    ? "bg-white text-blue-600 shadow-sm"
+                    ? "bg-white text-blue-600"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >

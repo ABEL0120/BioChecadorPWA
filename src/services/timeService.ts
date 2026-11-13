@@ -89,6 +89,10 @@ class TimeService {
     const seconds = pad(d.getSeconds());
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
   }
+
+  public nowDateLocal(): string {
+    return this.nowIsoLocal().slice(0, 10);
+  }
 }
 
 export const timeService = new TimeService();

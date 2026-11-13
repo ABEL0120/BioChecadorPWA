@@ -300,7 +300,7 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                               <div
                                 className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
                                   isHoy
-                                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                                    ? "bg-blue-600 text-white"
                                     : vals.esLaborable
                                       ? "bg-slate-100 text-slate-700"
                                       : "bg-slate-100/70 text-slate-400"
@@ -418,7 +418,7 @@ export const HorarioSemanal: React.FC<HorarioSemanalProps> = ({
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
                           isHoy
-                            ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                            ? "bg-blue-600 text-white"
                             : vals.esLaborable
                               ? "bg-slate-100 text-slate-700"
                               : "bg-slate-100/70 text-slate-400"

@@ -237,7 +237,7 @@ export const RecibosPage: React.FC = () => {
             <button
               onClick={handleBuscar}
               disabled={loading}
-              className="w-full h-14 rounded-2xl font-black text-sm tracking-wide transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/25 active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50"
+              className="w-full h-14 rounded-2xl font-black text-sm tracking-wide transition-all duration-300 bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50"
             >
               {loading ? (
                 <IonSpinner name="crescent" className="w-5 h-5 text-white" />
@@ -349,10 +349,10 @@ export const RecibosPage: React.FC = () => {
                             recibo.nombreArchivo,
                           )
                         }
-                        className={`w-full h-14 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
+                        className={`w-full h-14 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
                           recibo.tienePdf
-                            ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20"
-                            : "bg-slate-100 text-slate-400 border border-slate-200 shadow-none cursor-not-allowed opacity-50"
+                            ? "bg-blue-600 text-white hover:bg-blue-700"
+                            : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-50"
                         }`}
                       >
                         {isDownloadingPdf ? (
@@ -382,10 +382,10 @@ export const RecibosPage: React.FC = () => {
                             recibo.nombreArchivo,
                           )
                         }
-                        className={`w-full h-14 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
+                        className={`w-full h-14 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
                           recibo.tieneXml
-                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20"
-                            : "bg-slate-100 text-slate-400 border border-slate-200 shadow-none cursor-not-allowed opacity-50"
+                            ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                            : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-50"
                         }`}
                       >
                         {isDownloadingXml ? (

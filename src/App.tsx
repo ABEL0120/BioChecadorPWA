@@ -12,27 +12,15 @@ import {
   IonRouterOutlet,
   setupIonicReact,
   IonAlert,
-  IonSplitPane,
 } from "@ionic/react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { IonReactRouter } from "@ionic/react-router";
 import React, { lazy, Suspense } from "react";
 import Home from "./pages/Home";
-import { PwaInstallGate } from "./components/PwaInstallGate";
+import { PwaInstallProvider } from "./context/PwaInstallProvider";
 import { AuthSessionProvider } from "./context/AuthSessionContext";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { MenuLateral } from "./components/MenuLateral";
-import "@ionic/react/css/core.css";
-import "@ionic/react/css/normalize.css";
-import "@ionic/react/css/structure.css";
-import "@ionic/react/css/typography.css";
-import "@ionic/react/css/padding.css";
-import "@ionic/react/css/float-elements.css";
-import "@ionic/react/css/text-alignment.css";
-import "@ionic/react/css/text-transformation.css";
-import "@ionic/react/css/flex-utils.css";
-import "@ionic/react/css/display.css";
-import "./theme/variables.css";
 
 const HorarioPage = lazy(() => import("./pages/HorarioPage"));
 const HistorialPage = lazy(() => import("./pages/HistorialPage"));
@@ -50,6 +38,7 @@ const PermisosScreen = lazy(() =>
 
 const RecibosPage = lazy(() => import("./pages/RecibosPage"));
 const NotificacionesPage = lazy(() => import("./pages/NotificacionesPage"));
+const ChecadorFisicoPage = lazy(() => import("./pages/ChecadorFisicoPage"));
 
 const PageLoadingFallback: React.FC = () => (
   <div className="flex h-full w-full items-center justify-center bg-slate-50 min-h-[50vh]">
@@ -144,57 +133,60 @@ const App: React.FC = () => (
     <UpdatePrompt />
     <OfflineBanner />
     <AuthSessionProvider>
-      <PwaInstallGate>
+      <PwaInstallProvider>
         <IonReactRouter>
           <PushStatusWatcher />
-          <IonSplitPane contentId="main-content">
-            <MenuLateral />
-            <IonRouterOutlet id="main-content">
-              <Route exact path="/home">
-                <Home />
-              </Route>
-              <Route exact path="/horario">
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <HorarioPage />
-                </Suspense>
-              </Route>
-              <Route exact path="/historial">
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <HistorialPage />
-                </Suspense>
-              </Route>
-              <Route exact path="/solicitudes">
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <SolicitudesPage />
-                </Suspense>
-              </Route>
-              <Route exact path="/vacaciones">
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <VacacionesScreen />
-                </Suspense>
-              </Route>
-              <Route exact path="/permisos">
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <PermisosScreen />
-                </Suspense>
-              </Route>
-              <Route exact path="/recibos">
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <RecibosPage />
-                </Suspense>
-              </Route>
-              <Route exact path="/notificaciones">
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <NotificacionesPage />
-                </Suspense>
-              </Route>
-              <Route exact path="/">
-                <Redirect to="/home" />
-              </Route>
-            </IonRouterOutlet>
-          </IonSplitPane>
+          <IonRouterOutlet id="main-content">
+            <Route exact path="/home">
+              <Home />
+            </Route>
+            <Route exact path="/horario">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <HorarioPage />
+              </Suspense>
+            </Route>
+            <Route exact path="/historial">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <HistorialPage />
+              </Suspense>
+            </Route>
+            <Route exact path="/solicitudes">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <SolicitudesPage />
+              </Suspense>
+            </Route>
+            <Route exact path="/vacaciones">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <VacacionesScreen />
+              </Suspense>
+            </Route>
+            <Route exact path="/permisos">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <PermisosScreen />
+              </Suspense>
+            </Route>
+            <Route exact path="/recibos">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <RecibosPage />
+              </Suspense>
+            </Route>
+            <Route exact path="/notificaciones">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <NotificacionesPage />
+              </Suspense>
+            </Route>
+            <Route exact path="/checador-fisico">
+              <Suspense fallback={<PageLoadingFallback />}>
+                <ChecadorFisicoPage />
+              </Suspense>
+            </Route>
+            <Route exact path="/">
+              <Redirect to="/home" />
+            </Route>
+          </IonRouterOutlet>
+          <MenuLateral />
         </IonReactRouter>
-      </PwaInstallGate>
+      </PwaInstallProvider>
     </AuthSessionProvider>
   </IonApp>
 );

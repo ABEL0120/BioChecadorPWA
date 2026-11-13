@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { EstadoEmpleadoDto, TurnoDetalleDto } from "../types/api";
 import { GpsLocationResult } from "../services/locationService";
 import { timeService } from "../services/timeService";
+import { obtenerEstadoMovimientosHoy } from "../utils/movimientoEstadoHelper";
 
 export type MovimientoPermitido =
   | "ENTRADA"
@@ -118,19 +119,10 @@ export const useValidacionMarcaje = (
         // Permitir marcar donde sea sin restricción de distancia ni geocerca
         isDentroDeRango = true;
 
-        const hoyStr = timeService.now().toISOString().split("T")[0];
-        const fechaGuardado = (empleado as any).fechaGuardadoLocal;
-        let ultimo = (empleado.ultimoMovimientoHoy || "").toUpperCase();
-
-        if (fechaGuardado && fechaGuardado !== hoyStr) {
-          ultimo = "";
-        }
-
-        const yaHaySalidaHoy = Boolean(
-          empleado.tieneSalidaHoy ||
-          ultimo === "SALIDA" ||
-          ultimo.includes("SALIDA"),
-        );
+        const {
+          ultimoMovimientoHoy: ultimo,
+          tieneSalidaHoy: yaHaySalidaHoy,
+        } = obtenerEstadoMovimientosHoy(empleado);
 
         let fallbackMovements: MovimientoPermitido[] = ["ENTRADA"];
         if (!ultimo || ultimo === "SALIDA") {

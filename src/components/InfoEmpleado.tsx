@@ -8,6 +8,7 @@ import {
   cloudOfflineOutline,
 } from "ionicons/icons";
 import { MovimientoPermitido } from "../hooks/useValidacionMarcaje";
+import { obtenerEstadoMovimientosHoy } from "../utils/movimientoEstadoHelper";
 
 interface InfoEmpleadoProps {
   currentTime: string;
@@ -159,8 +160,8 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
                 marking || cooldownSeconds > 0
                   ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                   : mov.includes("COMIDA")
-                    ? "bg-orange-500 text-white hover:bg-orange-600 shadow-xl shadow-orange-200/50 active:scale-[0.98]"
-                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 active:scale-[0.98]"
+                    ? "bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98]"
+                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"
               }`}
             >
               {marking ? (
@@ -181,12 +182,7 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
                   />
                   <span>
                     {mov === "ENTRADA" &&
-                    (resultado?.tieneSalidaHoy ||
-                      (resultado?.ultimoMovimientoHoy || "").toUpperCase() ===
-                        "SALIDA" ||
-                      (resultado?.ultimoMovimientoHoy || "")
-                        .toUpperCase()
-                        .includes("SALIDA"))
+                    obtenerEstadoMovimientosHoy(resultado).tieneSalidaHoy
                       ? "Volver a entrar"
                       : `Marcar ${formatMovementLabel(mov)}`}
                   </span>
@@ -198,7 +194,7 @@ export const InfoEmpleado: React.FC<InfoEmpleadoProps> = ({
           <button
             disabled={enrolling}
             onClick={handleEnrolarBiometria}
-            className="w-full h-16 rounded-[20px] font-black text-lg tracking-wide transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 shadow-xl shadow-amber-200/50 active:scale-[0.98] flex items-center justify-center gap-3"
+            className="w-full h-16 rounded-[20px] font-black text-lg tracking-wide transition-all duration-300 bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.98] flex items-center justify-center gap-3"
           >
             {enrolling ? (
               <IonSpinner name="crescent" className="w-6 h-6 text-white" />

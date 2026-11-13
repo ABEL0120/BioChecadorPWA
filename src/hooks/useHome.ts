@@ -13,6 +13,11 @@ import {
   MovimientoPermitido,
 } from "./useValidacionMarcaje";
 import { formatError } from "../utils/errorHandler";
+import {
+  esMismoDiaLocal,
+  obtenerEstadoMovimientosHoy,
+} from "../utils/movimientoEstadoHelper";
+import { useNetworkStatus } from "./useNetworkStatus";
 import { RegistroChecadaResponseDto } from "../types/api";
 import {
   isPushSupported,
@@ -173,6 +178,37 @@ export const useHome = () => {
   const [hasPendingSolicitud, setHasPendingSolicitud] =
     useState<boolean>(false);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+  const isOnline = useNetworkStatus();
+  const prevIsOnlineRef = useRef<boolean>(isOnline);
+
+  const esResultadoOfflineLocal = (
+    res: RegistroChecadaResponseDto | null,
+  ): boolean => {
+    const mensaje = res?.mensaje?.toLowerCase() || "";
+    return (
+      mensaje.includes("guardado localmente") ||
+      mensaje.includes("modo offline")
+    );
+  };
+
+  useEffect(() => {
+    const wasOnline = prevIsOnlineRef.current;
+    prevIsOnlineRef.current = isOnline;
+    if (!wasOnline && isOnline) {
+      setRegistroResult((prev) =>
+        esResultadoOfflineLocal(prev) ? null : prev,
+      );
+    }
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (
+      registroResult?.fechaHora &&
+      !esMismoDiaLocal(registroResult.fechaHora)
+    ) {
+      setRegistroResult(null);
+    }
+  }, [resultado?.fechaGuardadoLocal, registroResult?.fechaHora]);
 
   useEffect(() => {
     if (!resultado?.rfc) {
@@ -264,16 +300,27 @@ export const useHome = () => {
       checkPending();
     };
 
+    const handleSyncCompleted = () => {
+      checkPending();
+      setRegistroResult((prev) =>
+        esResultadoOfflineLocal(prev) ? null : prev,
+      );
+    };
+
     window.addEventListener("offline", handleStateChange);
-    window.addEventListener("online", handleStateChange);
-    window.addEventListener("offline-sync-completed", handleStateChange);
+    window.addEventListener("online", handleSyncCompleted);
+    window.addEventListener("offline-sync-completed", handleSyncCompleted);
     window.addEventListener("storage", handleStateChange);
+    window.addEventListener("focus", handleStateChange);
+    document.addEventListener("visibilitychange", handleStateChange);
 
     return () => {
       window.removeEventListener("offline", handleStateChange);
-      window.removeEventListener("online", handleStateChange);
-      window.removeEventListener("offline-sync-completed", handleStateChange);
+      window.removeEventListener("online", handleSyncCompleted);
+      window.removeEventListener("offline-sync-completed", handleSyncCompleted);
       window.removeEventListener("storage", handleStateChange);
+      window.removeEventListener("focus", handleStateChange);
+      document.removeEventListener("visibilitychange", handleStateChange);
     };
   }, [resultado?.rfc]);
 
@@ -471,11 +518,12 @@ export const useHome = () => {
       setHasPendingOffline(true);
       iniciarCooldownMarcaje(resultado.rfc!);
 
+      const { tieneSalidaHoy: yaTuvoSalidaHoy } =
+        obtenerEstadoMovimientosHoy(resultado);
       const huboSalidaOffline =
-        Boolean(resultado.tieneSalidaHoy) ||
+        yaTuvoSalidaHoy ||
         movimientoSeleccionado === "SALIDA" ||
-        movimientoSeleccionado.includes("SALIDA") ||
-        (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
+        movimientoSeleccionado.includes("SALIDA");
 
       login({
         ultimoMovimientoHoy: movimientoSeleccionado,
@@ -561,11 +609,12 @@ export const useHome = () => {
         if (response.data) {
           iniciarCooldownMarcaje(resultado.rfc);
           setRegistroResult(response.data);
+          const { tieneSalidaHoy: yaTuvoSalidaHoy } =
+            obtenerEstadoMovimientosHoy(resultado);
           const huboSalidaOnline =
-            Boolean(resultado.tieneSalidaHoy) ||
+            yaTuvoSalidaHoy ||
             movimientoSeleccionado === "SALIDA" ||
-            movimientoSeleccionado.includes("SALIDA") ||
-            (resultado.ultimoMovimientoHoy || "").toUpperCase() === "SALIDA";
+            movimientoSeleccionado.includes("SALIDA");
 
           login({
             ultimoMovimientoHoy: movimientoSeleccionado,
@@ -799,7 +848,7 @@ export const useHome = () => {
     setToastState,
     alertState,
     setAlertState,
-    hasPendingOffline,
+    hasPendingOffline: hasPendingOffline && !isOnline,
     hasPendingSolicitud,
     showSolicitudModal,
     setShowSolicitudModal,

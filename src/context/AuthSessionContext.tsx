@@ -4,12 +4,15 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { EstadoEmpleadoDto } from "../types/api";
 import { checadorApi } from "../api/checadorApi";
 import { biometricService } from "../services/biometricService";
 import { offlineSyncService } from "../services/offlineSyncService";
+import { timeService } from "../services/timeService";
+import { normalizarSesionPorDia } from "../utils/movimientoEstadoHelper";
 
 export interface AuthSessionContextType {
   user: EstadoEmpleadoDto | null;
@@ -34,6 +37,7 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<EstadoEmpleadoDto | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const syncInFlightRef = useRef<Promise<void> | null>(null);
 
   const logout = useCallback(() => {
     setUser(null);
@@ -56,42 +60,56 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
 
   const syncOfflinePunches = useCallback(async () => {
     if (!navigator.onLine) return;
-    try {
-      const pending = await offlineSyncService.obtenerChecadasPendientes();
-      if (pending.length === 0) return;
-      let syncedAny = false;
-      for (const punch of pending) {
-        try {
-          const { id, timestamp, ...punchData } = punch;
-          const res = await checadorApi.marcar(punchData);
-          if (res.success || res.data) {
-            if (id) await offlineSyncService.eliminarChecada(id);
-            syncedAny = true;
-          } else if (
-            res.message &&
-            (res.message.toLowerCase().includes("ya existe") ||
-              res.message.toLowerCase().includes("ya se registr") ||
-              res.message.toLowerCase().includes("ya tienes") ||
-              res.message.toLowerCase().includes("no puedes registrar"))
-          ) {
-            if (id) await offlineSyncService.eliminarChecada(id);
-            syncedAny = true;
-          }
-        } catch (err: any) {
-          if (
-            err.response &&
-            err.response.status >= 400 &&
-            err.response.status < 500
-          ) {
-            if (punch.id) await offlineSyncService.eliminarChecada(punch.id);
-            syncedAny = true;
+    if (syncInFlightRef.current) {
+      await syncInFlightRef.current;
+      return;
+    }
+
+    const run = (async () => {
+      try {
+        const pending = await offlineSyncService.obtenerChecadasPendientes();
+        if (pending.length === 0) return;
+        let syncedAny = false;
+        for (const punch of pending) {
+          try {
+            const { id, timestamp, ...punchData } = punch;
+            const res = await checadorApi.marcar(punchData);
+            if (res.success || res.data) {
+              if (id) await offlineSyncService.eliminarChecada(id);
+              syncedAny = true;
+            } else if (
+              res.message &&
+              (res.message.toLowerCase().includes("ya existe") ||
+                res.message.toLowerCase().includes("ya se registr") ||
+                res.message.toLowerCase().includes("ya tienes") ||
+                res.message.toLowerCase().includes("no puedes registrar"))
+            ) {
+              if (id) await offlineSyncService.eliminarChecada(id);
+              syncedAny = true;
+            }
+          } catch (err: any) {
+            if (
+              err.response &&
+              err.response.status >= 400 &&
+              err.response.status < 500
+            ) {
+              if (punch.id) await offlineSyncService.eliminarChecada(punch.id);
+              syncedAny = true;
+            }
           }
         }
-      }
-      if (syncedAny) {
-        window.dispatchEvent(new Event("offline-sync-completed"));
-      }
-    } catch (err) {}
+        if (syncedAny) {
+          window.dispatchEvent(new Event("offline-sync-completed"));
+        }
+      } catch {}
+    })();
+
+    syncInFlightRef.current = run;
+    try {
+      await run;
+    } finally {
+      syncInFlightRef.current = null;
+    }
   }, []);
 
   const refresh = useCallback(async (): Promise<{
@@ -129,7 +147,7 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
           const userData = {
             ...freshData,
             tieneBiometria: tieneBio,
-            fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+            fechaGuardadoLocal: timeService.nowDateLocal(),
           };
           localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
           return userData;
@@ -150,6 +168,28 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
     return { success: false, message: "Error desconocido." };
   }, [isRefreshing, logout, syncOfflinePunches]);
 
+  const sincronizarCambioDeDia = useCallback(() => {
+    setUser((prev) => {
+      const target =
+        prev ||
+        (() => {
+          try {
+            const stored = localStorage.getItem(SESSION_KEY);
+            return stored ? (JSON.parse(stored) as EstadoEmpleadoDto) : null;
+          } catch {
+            return null;
+          }
+        })();
+      if (!target) return prev;
+      const { empleadoNormalizado, cambioDeDia } = normalizarSesionPorDia(target);
+      if (!cambioDeDia && target.fechaGuardadoLocal) return prev;
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(empleadoNormalizado));
+      } catch {}
+      return prev ? empleadoNormalizado : prev;
+    });
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     const safetyTimeout = setTimeout(() => {
@@ -160,21 +200,58 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
         const stored = localStorage.getItem(SESSION_KEY);
         if (stored) {
           const parsedUser = JSON.parse(stored) as EstadoEmpleadoDto;
+          const { empleadoNormalizado, cambioDeDia } =
+            normalizarSesionPorDia(parsedUser);
+          let usuarioHidratado = empleadoNormalizado;
+          const hoyLocal = timeService.nowDateLocal();
+
+          if (cambioDeDia && usuarioHidratado.rfc) {
+            try {
+              const pending =
+                await offlineSyncService.obtenerChecadasPendientes();
+              const pendingHoy = pending.filter(
+                (p) =>
+                  p.rfc === usuarioHidratado.rfc &&
+                  (p.fechaHora || p.FechaHora || "").slice(0, 10) === hoyLocal,
+              );
+              if (pendingHoy.length > 0) {
+                const ultimaPendiente = pendingHoy[pendingHoy.length - 1];
+                const movHoy = (ultimaPendiente.tipoMovimiento || "")
+                  .trim()
+                  .toUpperCase();
+                const huboSalidaHoy = pendingHoy.some((p) => {
+                  const m = (p.tipoMovimiento || "").toUpperCase();
+                  return m === "SALIDA" || m.includes("SALIDA");
+                });
+                usuarioHidratado = {
+                  ...usuarioHidratado,
+                  ultimoMovimientoHoy: movHoy,
+                  tieneSalidaHoy: huboSalidaHoy,
+                  fechaGuardadoLocal: hoyLocal,
+                };
+              }
+            } catch {}
+          }
+
+          if (cambioDeDia || !parsedUser.fechaGuardadoLocal) {
+            localStorage.setItem(SESSION_KEY, JSON.stringify(usuarioHidratado));
+          }
+
           if (isMounted) {
-            setUser(parsedUser);
+            setUser(usuarioHidratado);
             setIsLoadingSession(false);
           }
-          if (navigator.onLine && parsedUser.rfc) {
+          if (navigator.onLine && usuarioHidratado.rfc) {
             const deviceName = biometricService.getDeviceName();
             const res = await checadorApi.verificarRfc(
-              parsedUser.rfc,
+              usuarioHidratado.rfc,
               deviceName,
             );
             if (isMounted) {
               if (res.success && res.data && res.data.existe) {
                 const userData = {
                   ...res.data,
-                  fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+                  fechaGuardadoLocal: timeService.nowDateLocal(),
                 };
                 setUser(userData);
                 localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
@@ -198,14 +275,47 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   }, [logout]);
 
   useEffect(() => {
-    window.addEventListener("online", syncOfflinePunches);
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const triggerSyncAndRefresh = () => {
+      if (!navigator.onLine) return;
+      const runSync = localStorage.getItem(SESSION_KEY)
+        ? refresh().catch(() => {})
+        : syncOfflinePunches().catch(() => {});
+
+      Promise.resolve(runSync).finally(async () => {
+        if (!navigator.onLine) return;
+        try {
+          const remaining =
+            await offlineSyncService.obtenerChecadasPendientes();
+          if (remaining.length > 0 && navigator.onLine) {
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = setTimeout(() => {
+              if (!navigator.onLine) return;
+              if (localStorage.getItem(SESSION_KEY)) {
+                refresh().catch(() => {});
+              } else {
+                syncOfflinePunches().catch(() => {});
+              }
+            }, 2500);
+          }
+        } catch {}
+      });
+    };
+
+    const handleOnline = () => {
+      triggerSyncAndRefresh();
+    };
+
+    window.addEventListener("online", handleOnline);
     if (navigator.onLine) {
       syncOfflinePunches();
     }
     return () => {
-      window.removeEventListener("online", syncOfflinePunches);
+      window.removeEventListener("online", handleOnline);
+      if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [syncOfflinePunches]);
+  }, [refresh, syncOfflinePunches]);
 
   const login = (
     newUser:
@@ -217,13 +327,14 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
       const currentStored = stored
         ? (JSON.parse(stored) as EstadoEmpleadoDto)
         : null;
-      const base = prev || currentStored || ({} as EstadoEmpleadoDto);
+      const baseRaw = prev || currentStored || ({} as EstadoEmpleadoDto);
+      const base = normalizarSesionPorDia(baseRaw).empleadoNormalizado;
       const resolved =
         typeof newUser === "function" ? newUser(base) : { ...base, ...newUser };
       if (!resolved) return null;
       const userData = {
         ...resolved,
-        fechaGuardadoLocal: new Date().toISOString().split("T")[0],
+        fechaGuardadoLocal: timeService.nowDateLocal(),
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
       return userData;
@@ -231,17 +342,30 @@ export const AuthSessionProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && navigator.onLine) {
+    const handleResume = () => {
+      sincronizarCambioDeDia();
+      if (navigator.onLine) {
         if (sessionStorage.getItem("enrolling_biometric") === "true") return;
         syncOfflinePunches().catch(() => {});
         refresh().catch(() => {});
       }
     };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        handleResume();
+      }
+    };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
+    window.addEventListener("focus", handleResume);
+    window.addEventListener("pageshow", handleResume);
+    const dayCheckInterval = setInterval(sincronizarCambioDeDia, 15000);
+    return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [refresh, syncOfflinePunches]);
+      window.removeEventListener("focus", handleResume);
+      window.removeEventListener("pageshow", handleResume);
+      clearInterval(dayCheckInterval);
+    };
+  }, [refresh, sincronizarCambioDeDia, syncOfflinePunches]);
 
   return (
     <AuthSessionContext.Provider
