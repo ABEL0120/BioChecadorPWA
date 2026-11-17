@@ -1,15 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { IonIcon, IonSpinner } from "@ionic/react";
 import {
-  cameraOutline,
   imageOutline,
-  keypadOutline,
   alertCircleOutline,
-  flashOutline,
   refreshOutline,
 } from "ionicons/icons";
 import { extraerTokenChecadorFisico } from "../utils/checadorFisicoHelper";
+import { decodeQrTokenFromImageFile } from "../utils/qrImageScanner";
 
 interface Props {
   onScanSuccess: (token: string) => void;
@@ -23,23 +21,40 @@ export const ChecadorFisicoScanner: React.FC<Props> = ({
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "checador-fisico-qr-reader";
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [imageScanError, setImageScanError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [isScanningActive, setIsScanningActive] = useState<boolean>(false);
-  const [showManualInput, setShowManualInput] = useState<boolean>(false);
-  const [manualToken, setManualToken] = useState<string>("");
+  const [isScanningImage, setIsScanningImage] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scannedLockRef = useRef<boolean>(false);
+  const onScanSuccessRef = useRef(onScanSuccess);
+  onScanSuccessRef.current = onScanSuccess;
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const startScanner = async () => {
+  const stopCameraScanner = useCallback(async () => {
+    if (scannerRef.current) {
       try {
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
+        scannerRef.current.clear();
+      } catch {}
+      scannerRef.current = null;
+    }
+  }, []);
+
+  const startCameraScanner = useCallback(
+    async (isMountedCheck?: () => boolean) => {
+      try {
+        await stopCameraScanner();
         setIsInitializing(true);
         setCameraError(null);
         scannedLockRef.current = false;
 
-        const scanner = new Html5Qrcode(containerId);
+        const scanner = new Html5Qrcode(containerId, {
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          useBarCodeDetectorIfSupported: true,
+          verbose: false,
+        });
         scannerRef.current = scanner;
 
         await scanner.start(
@@ -59,20 +74,20 @@ export const ChecadorFisicoScanner: React.FC<Props> = ({
                   navigator.vibrate(150);
                 } catch {}
               }
-              stopScanner().finally(() => {
-                onScanSuccess(token);
+              stopCameraScanner().finally(() => {
+                onScanSuccessRef.current(token);
               });
             }
           },
-          () => {}
+          () => {},
         );
 
-        if (isMounted) {
+        if (!isMountedCheck || isMountedCheck()) {
           setIsScanningActive(true);
           setIsInitializing(false);
         }
       } catch (err: any) {
-        if (isMounted) {
+        if (!isMountedCheck || isMountedCheck()) {
           setIsInitializing(false);
           setIsScanningActive(false);
           const msg =
@@ -81,123 +96,56 @@ export const ChecadorFisicoScanner: React.FC<Props> = ({
           setCameraError(msg);
         }
       }
-    };
+    },
+    [disabled, stopCameraScanner],
+  );
 
-    const stopScanner = async () => {
-      if (scannerRef.current) {
-        try {
-          if (scannerRef.current.isScanning) {
-            await scannerRef.current.stop();
-          }
-          scannerRef.current.clear();
-        } catch {}
-        scannerRef.current = null;
-      }
-    };
-
-    startScanner();
+  useEffect(() => {
+    let isMounted = true;
+    startCameraScanner(() => isMounted);
 
     return () => {
       isMounted = false;
-      stopScanner();
+      stopCameraScanner();
     };
-  }, [disabled]);
+  }, [startCameraScanner, stopCameraScanner]);
 
   const handleRetryCamera = () => {
-    setCameraError(null);
-    setIsInitializing(true);
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning) {
-          scannerRef.current.stop();
-        }
-        scannerRef.current.clear();
-      } catch {}
-      scannerRef.current = null;
-    }
-    const scanner = new Html5Qrcode(containerId);
-    scannerRef.current = scanner;
-    scannedLockRef.current = false;
-    scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-        (decodedText: string) => {
-          if (scannedLockRef.current || disabled) return;
-          const token = extraerTokenChecadorFisico(decodedText);
-          if (token) {
-            scannedLockRef.current = true;
-            if (navigator.vibrate) {
-              try {
-                navigator.vibrate(150);
-              } catch {}
-            }
-            if (scannerRef.current?.isScanning) {
-              scannerRef.current.stop().then(() => {
-                scannerRef.current?.clear();
-                scannerRef.current = null;
-                onScanSuccess(token);
-              });
-            } else {
-              onScanSuccess(token);
-            }
-          }
-        },
-        () => {}
-      )
-      .then(() => {
-        setIsScanningActive(true);
-        setIsInitializing(false);
-      })
-      .catch((err: any) => {
-        setIsInitializing(false);
-        setIsScanningActive(false);
-        setCameraError(
-          err?.message || "No se pudo acceder a la cámara. Revisa permisos."
-        );
-      });
+    startCameraScanner();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImageScanError(null);
+    setIsScanningImage(true);
+
     try {
-      let scanner = scannerRef.current;
-      if (!scanner) {
-        scanner = new Html5Qrcode(containerId);
-        scannerRef.current = scanner;
-      }
-      if (scanner.isScanning) {
-        await scanner.stop();
-      }
-      const decodedText = await scanner.scanFile(file, false);
-      const token = extraerTokenChecadorFisico(decodedText);
+      const token = await decodeQrTokenFromImageFile(file);
       if (token) {
+        scannedLockRef.current = true;
+        if (navigator.vibrate) {
+          try {
+            navigator.vibrate(150);
+          } catch {}
+        }
+        await stopCameraScanner();
         onScanSuccess(token);
+      } else {
+        setImageScanError(
+          "No se detectó un código QR válido en la imagen. Acerca o enfoca mejor el código e inténtalo de nuevo.",
+        );
       }
     } catch {
-      alert("No se pudo detectar un código QR en la imagen seleccionada.");
+      setImageScanError(
+        "No se pudo procesar la imagen seleccionada. Intenta con otra captura o foto.",
+      );
     } finally {
+      setIsScanningImage(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
-  };
-
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = extraerTokenChecadorFisico(manualToken);
-    if (!token) return;
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning) {
-          scannerRef.current.stop();
-        }
-        scannerRef.current.clear();
-      } catch {}
-      scannerRef.current = null;
-    }
-    onScanSuccess(token);
   };
 
   return (
@@ -250,7 +198,7 @@ export const ChecadorFisicoScanner: React.FC<Props> = ({
         )}
       </div>
 
-      <div className="flex items-center gap-3 mt-4">
+      <div className="flex flex-col items-center gap-3 mt-4 w-full max-w-[340px]">
         <input
           ref={fileInputRef}
           type="file"
@@ -260,47 +208,31 @@ export const ChecadorFisicoScanner: React.FC<Props> = ({
         />
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 active:scale-95 transition-all"
+          disabled={disabled || isScanningImage}
+          onClick={() => {
+            setImageScanError(null);
+            fileInputRef.current?.click();
+          }}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 active:scale-95 transition-all disabled:opacity-60"
         >
-          <IonIcon icon={imageOutline} className="text-base text-blue-600" />
-          <span>Escanear Imagen</span>
+          {isScanningImage ? (
+            <IonSpinner name="crescent" className="w-4 h-4 text-blue-600" />
+          ) : (
+            <IonIcon icon={imageOutline} className="text-base text-blue-600" />
+          )}
+          <span>{isScanningImage ? "Analizando imagen..." : "Escanear Imagen"}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setShowManualInput(!showManualInput)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 active:scale-95 transition-all"
-        >
-          <IonIcon icon={keypadOutline} className="text-base text-indigo-600" />
-          <span>{showManualInput ? "Ocultar Código" : "Ingresar Token"}</span>
-        </button>
+        {imageScanError && (
+          <div className="w-full p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2">
+            <IonIcon
+              icon={alertCircleOutline}
+              className="text-base shrink-0 mt-0.5 text-red-500"
+            />
+            <span>{imageScanError}</span>
+          </div>
+        )}
       </div>
-
-      {showManualInput && (
-        <form
-          onSubmit={handleManualSubmit}
-          className="w-full max-w-[340px] mt-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3"
-        >
-          <label className="text-xs font-bold text-slate-700">
-            Ingreso manual del Token
-          </label>
-          <input
-            type="text"
-            value={manualToken}
-            onChange={(e) => setManualToken(e.target.value)}
-            placeholder="Pega el token o URL del QR"
-            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            disabled={!manualToken.trim()}
-            className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            Continuar con Token
-          </button>
-        </form>
-      )}
     </div>
   );
 };

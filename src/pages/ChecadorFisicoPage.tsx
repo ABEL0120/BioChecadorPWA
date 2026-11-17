@@ -26,7 +26,10 @@ import { ChecadorFisicoScanner } from "../components/ChecadorFisicoScanner";
 import { checadorApi } from "../api/checadorApi";
 import { biometricService } from "../services/biometricService";
 import { locationService } from "../services/locationService";
-import { ChecadorFisicoResponseDto } from "../types/api";
+import {
+  ChecadorFisicoPasskeyPayload,
+  ChecadorFisicoResponseDto,
+} from "../types/api";
 import { useAuthSession } from "../context/AuthSessionContext";
 import { extraerTokenChecadorFisico } from "../utils/checadorFisicoHelper";
 
@@ -46,6 +49,12 @@ export const ChecadorFisicoPage: React.FC = () => {
   const [estado, setEstado] = useState<EstadoFlujo>("SCANNING");
   const [mensajeEstado, setMensajeEstado] = useState<string>("");
   const [tokenActual, setTokenActual] = useState<string>("");
+  const [passkeyActual, setPasskeyActual] =
+    useState<ChecadorFisicoPasskeyPayload | null>(null);
+  const [ubicacionActual, setUbicacionActual] = useState<{
+    latitud: number;
+    longitud: number;
+  } | null>(null);
   const [resultadoExitoso, setResultadoExitoso] =
     useState<ChecadorFisicoResponseDto | null>(null);
   const [opcionesSeleccion, setOpcionesSeleccion] = useState<string[]>([]);
@@ -93,24 +102,28 @@ export const ChecadorFisicoPage: React.FC = () => {
 
   const ejecutarFlujo = async (
     token: string,
-    tipoMovimientoOpcional?: "SALIDA_COMIDA" | "SALIDA" | null
+    tipoMovimientoOpcional?: "SALIDA_COMIDA" | "SALIDA" | null,
+    passkeyPrevia?: ChecadorFisicoPasskeyPayload | null,
+    ubicacionPrevia?: { latitud: number; longitud: number } | null,
   ) => {
     setTokenActual(token);
     setErrorDetalle(null);
     setResultadoExitoso(null);
 
     try {
-      setEstado("AUTHENTICATING");
-      setMensajeEstado("Verificando identidad con tu Passkey...");
-
-      const passkey = await biometricService.obtenerAsercionChecadorFisico(
-        token
-      );
+      let passkey = passkeyPrevia || null;
+      if (!passkey) {
+        setEstado("AUTHENTICATING");
+        setMensajeEstado("Verificando identidad con tu Passkey...");
+        passkey = await biometricService.obtenerAsercionChecadorFisico(token);
+        setPasskeyActual(passkey);
+      }
 
       setEstado("PROCESSING");
       setMensajeEstado("Registrando marcaje en el Checador Físico...");
 
-      const ubicacion = await obtenerUbicacionFallback();
+      const ubicacion = ubicacionPrevia || (await obtenerUbicacionFallback());
+      setUbicacionActual(ubicacion);
       const dispositivoNombre = biometricService.getDeviceName();
 
       const response = await checadorApi.marcarChecadorFisico({
@@ -123,7 +136,9 @@ export const ChecadorFisicoPage: React.FC = () => {
       });
 
       if (!response.success && !response.data) {
-        throw new Error(response.message || "Error al registrar en Checador Físico.");
+        throw new Error(
+          response.message || "Error al registrar en Checador Físico.",
+        );
       }
 
       const data = response.data;
@@ -132,13 +147,15 @@ export const ChecadorFisicoPage: React.FC = () => {
         setOpcionesSeleccion(
           data.opciones && data.opciones.length > 0
             ? data.opciones
-            : ["SALIDA_COMIDA", "SALIDA"]
+            : ["SALIDA_COMIDA", "SALIDA"],
         );
         setEstado("SELECTION");
         return;
       }
 
       if (data) {
+        setPasskeyActual(null);
+        setUbicacionActual(null);
         setResultadoExitoso(data);
         if (user && data.rfc && user.rfc === data.rfc) {
           login({
@@ -150,18 +167,22 @@ export const ChecadorFisicoPage: React.FC = () => {
         }
         setEstado("SUCCESS");
       } else {
-        throw new Error(response.message || "No se recibieron datos de confirmación.");
+        throw new Error(
+          response.message || "No se recibieron datos de confirmación.",
+        );
       }
     } catch (err: any) {
       const status = err?.response?.status;
       const apiMsg = err?.response?.data?.message || err?.message || "";
 
       if (status === 401) {
+        setPasskeyActual(null);
+        setUbicacionActual(null);
         setErrorDetalle({
           titulo: "Token expirado o Passkey no válida",
           mensaje:
             apiMsg ||
-            "El código QR del Checador Físico ha caducado (duración 30s) o la Passkey no está vinculada. Por favor escanea el código nuevamente.",
+            "El código QR del Checador Físico ha caducado o la Passkey no está vinculada. Por favor escanea el código nuevamente.",
           es401: true,
         });
         setEstado("ERROR");
@@ -171,7 +192,9 @@ export const ChecadorFisicoPage: React.FC = () => {
       if (status === 400) {
         setErrorDetalle({
           titulo: "Solicitud no válida",
-          mensaje: apiMsg || "Parámetros de checada incorrectos o movimiento no permitido.",
+          mensaje:
+            apiMsg ||
+            "Parámetros de checada incorrectos o movimiento no permitido.",
           es401: false,
         });
         setEstado("ERROR");
@@ -190,7 +213,8 @@ export const ChecadorFisicoPage: React.FC = () => {
 
       setErrorDetalle({
         titulo: "Error al registrar",
-        mensaje: apiMsg || "Ocurrió un error inesperado al procesar la checada.",
+        mensaje:
+          apiMsg || "Ocurrió un error inesperado al procesar la checada.",
         es401: false,
       });
       setEstado("ERROR");
@@ -198,18 +222,20 @@ export const ChecadorFisicoPage: React.FC = () => {
   };
 
   const handleSeleccionarMovimiento = async (
-    mov: "SALIDA_COMIDA" | "SALIDA"
+    mov: "SALIDA_COMIDA" | "SALIDA",
   ) => {
-    if (!tokenActual) {
+    if (!tokenActual || !passkeyActual) {
       reiniciarFlujo();
       return;
     }
-    await ejecutarFlujo(tokenActual, mov);
+    await ejecutarFlujo(tokenActual, mov, passkeyActual, ubicacionActual);
   };
 
   const reiniciarFlujo = () => {
     tokenProcesadoRef.current = false;
     setTokenActual("");
+    setPasskeyActual(null);
+    setUbicacionActual(null);
     setErrorDetalle(null);
     setResultadoExitoso(null);
     setOpcionesSeleccion([]);
@@ -256,7 +282,8 @@ export const ChecadorFisicoPage: React.FC = () => {
                   Escaneo de Checador Físico
                 </h1>
                 <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                  Apunta tu cámara al código QR dinámico que aparece en la pantalla del checador físico.
+                  Apunta tu cámara al código QR dinámico que aparece en la
+                  pantalla del checador físico.
                 </p>
               </div>
 
@@ -265,7 +292,10 @@ export const ChecadorFisicoPage: React.FC = () => {
               />
 
               <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400 bg-slate-100 px-3.5 py-1.5 rounded-full mt-2">
-                <IonIcon icon={fingerPrintOutline} className="text-sm text-slate-500" />
+                <IonIcon
+                  icon={fingerPrintOutline}
+                  className="text-sm text-slate-500"
+                />
                 <span>Autenticación rápida sin ingresar RFC</span>
               </div>
             </div>
@@ -311,26 +341,29 @@ export const ChecadorFisicoPage: React.FC = () => {
                   Selecciona tu Movimiento
                 </h2>
                 <p className="text-xs text-slate-500 mt-1 mb-6">
-                  Ya cuentas con una entrada registrada hoy. Indica qué tipo de salida deseas checar:
+                  Ya cuentas con una entrada registrada hoy. Indica qué tipo de
+                  salida deseas checar:
                 </p>
 
                 <div className="w-full flex flex-col gap-3">
                   {opcionesSeleccion.includes("SALIDA_COMIDA") && (
                     <button
                       type="button"
-                      onClick={() => handleSeleccionarMovimiento("SALIDA_COMIDA")}
+                      onClick={() =>
+                        handleSeleccionarMovimiento("SALIDA_COMIDA")
+                      }
                       className="w-full p-4 rounded-2xl border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 hover:border-orange-400 active:scale-[0.98] transition-all flex items-center gap-4 text-left"
                     >
                       <div className="w-12 h-12 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0">
-                        <IonIcon icon={restaurantOutline} className="text-2xl" />
+                        <IonIcon
+                          icon={restaurantOutline}
+                          className="text-2xl"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-black text-slate-900 m-0 tracking-tight">
                           Salida a Comer
                         </h3>
-                        <p className="text-[11px] text-slate-500 m-0 mt-0.5">
-                          Pausa intermedia para tomar alimentos
-                        </p>
                       </div>
                     </button>
                   )}
@@ -346,11 +379,8 @@ export const ChecadorFisicoPage: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-black text-slate-900 m-0 tracking-tight">
-                          Salida Final
+                          Salida
                         </h3>
-                        <p className="text-[11px] text-slate-500 m-0 mt-0.5">
-                          Fin de la jornada laboral
-                        </p>
                       </div>
                     </button>
                   )}
@@ -394,7 +424,9 @@ export const ChecadorFisicoPage: React.FC = () => {
 
                   {resultadoExitoso.tipoMovimiento && (
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-slate-400">Movimiento</span>
+                      <span className="font-semibold text-slate-400">
+                        Movimiento
+                      </span>
                       <span className="font-black text-blue-600">
                         {resultadoExitoso.tipoMovimiento}
                       </span>
@@ -403,7 +435,9 @@ export const ChecadorFisicoPage: React.FC = () => {
 
                   {resultadoExitoso.fechaHora && (
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-slate-400">Fecha y Hora</span>
+                      <span className="font-semibold text-slate-400">
+                        Fecha y Hora
+                      </span>
                       <span className="font-medium text-slate-700">
                         {resultadoExitoso.fechaHora}
                       </span>
@@ -476,4 +510,3 @@ export const ChecadorFisicoPage: React.FC = () => {
 };
 
 export default ChecadorFisicoPage;
-
