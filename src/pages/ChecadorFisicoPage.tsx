@@ -178,8 +178,11 @@ export const ChecadorFisicoPage: React.FC = () => {
       if (status === 401) {
         setPasskeyActual(null);
         setUbicacionActual(null);
+        const esErrorToken = apiMsg.toLowerCase().includes("token");
         setErrorDetalle({
-          titulo: "Token expirado o Passkey no válida",
+          titulo: esErrorToken
+            ? "Código QR expirado o inválido"
+            : "Passkey no válida",
           mensaje:
             apiMsg ||
             "El código QR del Checador Físico ha caducado o la Passkey no está vinculada. Por favor escanea el código nuevamente.",
